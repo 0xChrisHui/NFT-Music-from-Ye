@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 108 Cyber Records
 
-## Getting Started
+> 一位艺术家用两年时间，将 108 首音乐逐周刻进区块链。
+> 每位用户可与艺术家合奏，并将生成的音乐永久存储进自己的钱包。
 
-First, run the development server:
+代号：`nft-music`
+产品名：`108 Cyber Records`
+
+---
+
+## 当前状态
+
+📍 查看 [STATUS.md](./STATUS.md) — 当前做到哪、下一步是什么
+📋 查看 [TASKS.md](./TASKS.md) — 任务看板
+
+---
+
+## 启动开发
 
 ```bash
+# 1. 检查环境
+bash scripts/doctor.sh
+
+# 2. 启动 dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# 3. 打开浏览器
+# http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 文档导航
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 你（人类）需要读的
 
-## Learn More
+| 文件 | 什么时候读 |
+|---|---|
+| `STATUS.md` | 每次开始工作前 |
+| `TASKS.md` | 每次开始工作前 |
+| `playbook/phase-0-minimal.md` | 跟着做 Phase 0 时 |
+| `docs/LEARNING.md` | 空闲时间，看新增的概念 |
+| `docs/ERRORS.md` | 遇到报错时 |
+| `docs/COMMANDS.md` | 不知道怎么敲命令时 |
 
-To learn more about Next.js, take a look at the following resources:
+### AI 自己会读的（你不用主动读）
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| 文件 | 给谁 |
+|---|---|
+| `AGENTS.md` | AI 行为规则总入口 |
+| `CLAUDE.md` | Claude Code 专用指针 |
+| `docs/CONVENTIONS.md` | 代码规范 + 坏味道清单 |
+| `docs/STACK.md` | 技术栈白名单 / 黑名单 |
+| `docs/ARCHITECTURE.md` | 完整技术架构 |
+| `docs/HARDENING.md` | 安全加固路线 |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 协作模式
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+这个项目用 **双 AI 接力**：
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+Claude Code (主实现)  →  每 3-5 步暂停  →  Codex (独立审查)  →  回到 Claude
+```
+
+- **Claude Code**：负责日常实现、修 bug、推进 playbook
+- **Codex**：负责定期 review 代码，输出到 `reviews/YYYY-MM-DD.md`
+
+两个 AI 共享 `AGENTS.md` / `STATUS.md` / `TASKS.md` / `docs/`，但 `.claude/` 是 Claude 专属的强制保护层。
+
+---
+
+## 项目阶段
+
+- **Phase 0**：1 天最小闭环（前端 → API → 队列 → 链上 1 笔 mint）⬅ 当前
+- **Phase 1**：MVP 完整版（播放器 / 个人页 / 多岛屿）
+- **Phase 2**：合奏 + 乐谱
+- **Phase 3**：封面图 + 分享 + ScoreNFT
+- **Phase 4**：社区钱包 + 空投
+- **Phase 5**：主网上线
+
+详见 `docs/ARCHITECTURE.md` §13。
