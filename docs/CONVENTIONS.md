@@ -8,13 +8,16 @@
 ## 1. 文件 & 目录硬性指标
 
 ### 1.1 文件大小
-- **每个代码文件 ≤ 200 行**（hard limit，由 `.claude/hooks/check-file-size.js` 强制）
+- **每个代码文件 ≤ 220 行**（hard limit，由 `.claude/hooks/check-file-size.js` 强制）
+- **API route handler（`src/app/api/**/route.ts`）放宽到 ≤ 270 行**：业务编排天然比组件长
 - 例外：`docs/`、`playbook/`、`reviews/` 下的 markdown 不受限
 - 超过时必须**先告诉用户拆分计划**，得到批准再拆
+- 注释和空行算入总行数 — 但如果你接近上限只是因为注释多，先和用户讨论而不是删注释
 
 ### 1.2 目录规模
 - **每层目录 ≤ 8 个文件**（由 `.claude/hooks/check-folder-size.js` 强制）
 - 命名例外：`docs/`、`playbook/`、`reviews/`、`node_modules/`、`.next/`、`.git/`、`public/`、`contracts/`
+- **`src/app/api/**` 整棵子树豁免**：Next.js API route 子树天然会超 8 个端点
 - 项目根目录例外：含 `package.json` + `.git` 的那一层自动豁免（`next.config.ts`、`tsconfig.json`、`package.json`、`AGENTS.md` 等工具链/约定文件必须在根，搬不走）
 - 超过时必须**先告诉用户子目录规划**，得到批准再建
 
@@ -72,8 +75,8 @@
 ### 3.4 文件 / 代码
 - ❌ 留 TODO 或占位符不实现
 - ❌ 写 `// implement later` / `// TODO: handle error`
-- ❌ 单文件超过 200 行（hook 强制）
-- ❌ 单层目录超过 8 个文件（hook 强制）
+- ❌ 单文件超过 220 行（hook 强制；route.ts 放宽到 270）
+- ❌ 单层目录超过 8 个文件（hook 强制；`src/app/api/**` 整棵子树豁免）
 - ❌ Phase 1 就建 12 张表（按 Phase 递增）
 - ❌ 自建 JWT 系统（Phase 4 前一律用 Privy）
 
