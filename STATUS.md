@@ -35,4 +35,5 @@
 - 学习模式: slow mode（默认）
 - 学习机制 hooks 已就位：SessionStart 自动注入 STATUS/TASKS，Stop 在有未提交改动时打印自检清单
 - check-folder-size hook 已加项目根目录例外（含 package.json + .git 的层）
-- 当前在 worktree `quirky-herschel` 里工作，但所有 commit 都进 main 分支
+- 工作目录就是 main 主目录，不再用 worktree
+- 决策日志见 `docs/JOURNAL.md`（追溯"为什么"）
