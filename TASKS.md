@@ -38,6 +38,7 @@
 ## ✅ Done
 
 - **[Day 1]** 文档骨架首版：13 markdown（含 1 个 phase-0 playbook）+ 3 hooks + 3 scripts
+- **[Day 1 续]** 学习机制补丁：SessionStart hook（自动注入 STATUS/TASKS）+ Stop hook（未提交改动自检清单）+ QUICKSTART.md + check-folder-size 加项目根例外
 
 ---
 

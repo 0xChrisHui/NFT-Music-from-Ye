@@ -12,7 +12,7 @@
 
 ## 当前进度
 
-**做到哪**: Day 1 地基搭建中（创建文档骨架 + hooks + 脚本）
+**做到哪**: Day 1 地基已完成（文档骨架 + 5 hooks + 3 scripts + QUICKSTART）
 **下一步**: Phase 0 Step 0 — 跑 `scripts/doctor.sh` 检查环境
 **playbook**: `playbook/phase-0-minimal.md`
 
@@ -33,3 +33,6 @@
 - Next.js 版本是 16.1.6（不是 ARCHITECTURE.md 写的 14），React 19
 - Windows 环境，hooks 用 Git Bash 跑
 - 学习模式: slow mode（默认）
+- 学习机制 hooks 已就位：SessionStart 自动注入 STATUS/TASKS，Stop 在有未提交改动时打印自检清单
+- check-folder-size hook 已加项目根目录例外（含 package.json + .git 的层）
+- 当前在 worktree `quirky-herschel` 里工作，但所有 commit 都进 main 分支
