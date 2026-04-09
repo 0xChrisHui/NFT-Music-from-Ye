@@ -7,26 +7,27 @@
 
 ## 当前阶段
 
-**Phase**: Phase 1 — MVP ✅ **完成** + review P0 修复完成
-**目标**: ~~从"能跑的 demo"升级到"用户能体验并记住的 MVP"~~ — **已达成**
+**Phase**: Phase 1 ✅ 完成 → Phase 2 规划完成，待执行
+**目标**: Phase 2 — 合奏 + 草稿系统
 
 ## 当前进度
 
-**做到哪**: Phase 1 全部完成 + CTO review P0 修复（唯一性/mint_events 约束/配色对齐）
-**下一步**: Phase 2 规划（合奏 + Arweave）
-**playbook**: `playbook/phase-1/` 全部完成
+**做到哪**: Phase 1 全部完成 + review 修复 + Phase 2 playbook v2 已就绪
+**下一步**: Phase 2 Step 0（Web Audio 合奏 spike 技术验证）
+**playbook**: `playbook/phase-2/` 全套（overview + step-0 + track-a/b/c）
 
 ### 续做指南（下次会话第一件事读这段）
 
-Phase 1 已全部收尾，包括 CTO review P0 修复。下次会话：
-- 读 `reviews/phase-1-deferred.md` 了解延后项
+Phase 2 计划已通过 CTO review 并修正为 v2。下次会话直接开始 Step 0 spike：
+- 读 `playbook/phase-2/step-0-spike.md`，通过 4 个标准后分线
+- 读 `playbook/phase-2/overview.md` 了解文件 ownership 和冻结契约
+- 共享类型：`src/types/jam.ts`（API 命名已冻结）
+- 关键决策：Arweave 后移 Phase 3 / 草稿私有预览 / 录制上限 60s+500 事件
 - 合约地址（Phase 1）：`0x99F808bdE8E92f167830E4b9C62f92b81c664b7C`
-- API 命名：`GET /api/tracks` / `GET /api/tracks/[id]` / `GET /api/me/nfts` / `GET /api/health`
-- API route 放在 `app/api/`（不是 `src/app/api/`）
-- npm 用 `--legacy-peer-deps`；tsconfig `@/*` 映射项目根，src 下 import 写 `@/src/...`
+- API route 放在 `app/api/`；npm 用 `--legacy-peer-deps`；`@/*` 映射项目根
 - Foundry 在 `C:\foundry`
-- Track B worktree 在 `E:\Projects\nft-music-frontend`（可清理）
-- 配色用设计 token（blue/violet/rose/emerald/amber），不用十六进制
+- Phase 1 worktree `E:\Projects\nft-music-frontend` 可清理
+- 延后项：`reviews/phase-0-deferred.md` + `reviews/phase-1-deferred.md`
 
 测试钱包地址：`0x306D3A445b1fc7a789639fa9115e308a34231633`（OP Sepolia 已领 faucet）
 
