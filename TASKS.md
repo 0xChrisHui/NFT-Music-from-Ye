@@ -11,15 +11,37 @@
 
 ---
 
-## ⏭ Next（接下来 1-3 件）
+## ⏭ Next（Phase 2 — 合奏 + Arweave）
 
-- **[Phase 2]** 待规划（合奏 + Arweave）
+**Step 0（Gate，串行）**
+- **[Step 0]** Web Audio 键盘 spike — 验证可行性
+
+**Track A — 后端**（`feat/phase2-backend`）
+- **[A0]** sounds + pending_scores 表 + 类型定义
+- **[A1]** sounds 种子数据 + GET /api/sounds
+- **[A2]** Arweave 基础设施（@ardrive/turbo-sdk + 测试上传）
+- **[A3]** POST /api/score/save（草稿保存 24h TTL）
+- **[A4]** GET /api/scores/[id]/preview（草稿预览）
+- **[A5]** /me 展示 pending/failed 状态（Phase 1 延后项）
+
+**Track B — 前端**（`feat/phase2-frontend`，worktree）
+- **[B0]** 合奏页骨架 + 键盘输入系统
+- **[B1]** 音效播放（26 键 → 26 音）
+- **[B2]** 视觉反馈（按键动画）
+- **[B3]** 录制逻辑 + 预览回放
+- **[B4]** 合奏页 UI 完善
 
 ---
 
-## 📅 Later
+## 📅 Later（Track C — A+B 完成后集成）
 
-- 见 `reviews/phase-1-deferred.md` 延后项清单
+- **[C0]** merge Track B
+- **[C1]** 适配层切换 mock → 真实 API
+- **[C2]** 首页加"合奏"入口
+- **[C3]** 草稿管理（/me 加草稿列表 + 倒计时）
+- **[C4]** 端到端验证 + merge 回 main
+
+延后项清单：`reviews/phase-0-deferred.md` + `reviews/phase-1-deferred.md`
 
 ---
 
