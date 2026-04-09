@@ -2,11 +2,13 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "@openzeppelin/contracts/token/ERC1155/presets/ERC1155PresetMinterPauser.sol";
+import "../src/MaterialNFT.sol";
 
 /**
- * Phase 0 部署脚本 — 用 OZ 现成的 ERC1155PresetMinterPauser
- * 部署后 deployer 自动拥有 DEFAULT_ADMIN_ROLE + MINTER_ROLE
+ * Phase 1 部署脚本 — 自定义 MaterialNFT
+ *
+ * deployer = DEFAULT_ADMIN_ROLE（管理角色 + 更新 URI）
+ * minter 参数 = MINTER_ROLE（运营钱包，调 mint）
  *
  * 用法：
  * forge script script/Deploy.s.sol --rpc-url $ALCHEMY_RPC_URL \
@@ -14,14 +16,17 @@ import "@openzeppelin/contracts/token/ERC1155/presets/ERC1155PresetMinterPauser.
  */
 contract Deploy is Script {
     function run() external {
+        address minter = msg.sender;
+
         vm.startBroadcast();
 
-        // URI 占位，Phase 1 再换成真实的 Arweave 元数据地址
-        ERC1155PresetMinterPauser nft = new ERC1155PresetMinterPauser(
-            "https://placeholder.ripples/{id}.json"
+        MaterialNFT nft = new MaterialNFT(
+            "https://placeholder.ripples/{id}.json",
+            minter
         );
 
         console.log("MaterialNFT deployed at:", address(nft));
+        console.log("Minter (MINTER_ROLE):", minter);
 
         vm.stopBroadcast();
     }
