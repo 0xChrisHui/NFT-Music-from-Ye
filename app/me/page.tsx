@@ -65,7 +65,7 @@ export default function MePage() {
         {nfts.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2">
             {nfts.map((nft) => (
-              <NFTCard key={nft.token_id} nft={nft} />
+              <NFTCard key={nft.tx_hash} nft={nft} />
             ))}
           </div>
         )}
