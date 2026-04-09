@@ -72,6 +72,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (receipt.status === 'success') {
+      // 更新队列状态
       await supabaseAdmin
         .from('mint_queue')
         .update({
@@ -80,6 +81,23 @@ export async function GET(req: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', claimedJobId);
+
+      // 写入 mint_events（个人页"我的 NFT"从这里读）
+      const { data: track } = await supabaseAdmin
+        .from('tracks')
+        .select('id')
+        .eq('week', job.token_id)
+        .single();
+
+      if (track) {
+        await supabaseAdmin.from('mint_events').insert({
+          mint_queue_id: claimedJobId,
+          user_id: job.user_id,
+          track_id: track.id,
+          token_id: job.token_id,
+          tx_hash: txHash,
+        });
+      }
     } else {
       throw new Error('交易回滚');
     }
