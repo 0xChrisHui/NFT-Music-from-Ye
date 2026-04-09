@@ -12,16 +12,15 @@
 
 ## 当前进度
 
-**做到哪**: Phase 0 Step 3 ✅ 完成 — Privy 邮箱登录 + console 打印 evm_address，用户确认
-**下一步**: Phase 0 Step 4 — Supabase 建 2 张表（users, mint_queue）
-**playbook**: `playbook/phase-0-minimal.md` Step 4
+**做到哪**: Phase 0 Step 4 ✅ 完成 — Supabase 建 users + mint_queue 两张表，用户 Dashboard 确认
+**下一步**: Phase 0 Step 5 — MaterialNFT 部署 OP Sepolia（用 OZ 现成合约）
+**playbook**: `playbook/phase-0-minimal.md` Step 5
 
 ### 续做指南（下次会话第一件事读这段）
 
-Step 0-3 全部完成 = "前端能跑"里程碑。Step 3 commit `8ac1eaf`。
-下次会话直接读 `playbook/phase-0-minimal.md` 的 Step 4：
-- 目标：Supabase Dashboard 建 `users` + `mint_queue` 两张表
-- AI 写 SQL 文件，用户去 Dashboard 粘贴执行
+Step 4 已收尾（commit `e0105f5`）。下次会话直接读 `playbook/phase-0-minimal.md` 的 Step 5：
+- 目标：用 OZ ERC1155PresetMinterPauser 部署到 OP Sepolia，Etherscan 能查到合约
+- 需要 Foundry（forge），用户可能还没装
 - npm 装了 `--legacy-peer-deps`（ox 版本冲突），后续 install 也需要加这个 flag
 - tsconfig `@/*` 映射到项目根 `"./*"`，src 下的文件 import 要写 `@/src/...`
 
@@ -29,10 +28,10 @@ Step 0-3 全部完成 = "前端能跑"里程碑。Step 3 commit `8ac1eaf`。
 
 ## 上次成功验证
 
-- 验证内容: Phase 0 Step 3 完成 — Privy 邮箱登录 + evm_address
+- 验证内容: Phase 0 Step 4 完成 — Supabase users + mint_queue 建表
 - 验证时间: 2026-04-09
-- 验证方式: `verify.sh` 全绿 + 浏览器登录流程 + console 确认地址
-- 通过的 commit: `8ac1eaf`
+- 验证方式: Supabase Dashboard Table Editor 确认两张表存在
+- 通过的 commit: `e0105f5`
 
 ## 当前阻塞
 
