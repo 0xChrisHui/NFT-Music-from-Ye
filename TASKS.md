@@ -13,15 +13,14 @@
 
 ## ⏭ Next（接下来 1-3 件）
 
-- **[Phase 0 Step 3]** Privy 登录（拿到 evm_address）
 - **[Phase 0 Step 4]** Supabase 建 2 张表（users, mint_queue），用 Dashboard 手动
+- **[Phase 0 Step 5]** MaterialNFT 合约部署到 OP Sepolia（用 OZ 现成合约）
+- **[Phase 0 Step 6]** POST /api/mint/material（写队列 + 立即返回）
 
 ---
 
 ## 📅 Later（Phase 0 剩余）
 
-- **[Phase 0 Step 5]** MaterialNFT 合约部署到 OP Sepolia（用 OZ 现成合约）
-- **[Phase 0 Step 6]** POST /api/mint/material（写队列 + 立即返回）
 - **[Phase 0 Step 7]** 手动触发 cron 端点
 - **[Phase 0 Step 8]** OP Sepolia Etherscan 看到 tx → 🎉
 
@@ -50,6 +49,7 @@
 - **[Phase 0 Step 0]** ✅ 完成（2026-04-09）— 项目改名 Ripples in the Pond + GitHub rename + 3 外部账号注册 + .env.local 10 key 填齐 + 测试钱包生成并领 OP Sepolia faucet + doctor.sh 26 ✅ / 2 ⚠（Foundry）/ 0 ❌ + checkpoint `checkpoint/2026-04-09-1226`
 - **[Phase 0 Step 1]** ✅ 完成（2026-04-09）— 全屏黑底 + 中央白字 "Ripples in the Pond"，commit `6523c60`
 - **[Phase 0 Step 2]** ✅ 完成（2026-04-09）— 呼吸圆 Island + useAudioPlayer hook + 点击播放/停止 mp3，commit `eb1d7fb`
+- **[Phase 0 Step 3]** ✅ 完成（2026-04-09）— Privy 邮箱登录 + LoginButton + console 打印 evm_address，commit `8ac1eaf`
 
 ---
 

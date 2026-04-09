@@ -12,25 +12,27 @@
 
 ## 当前进度
 
-**做到哪**: Phase 0 Step 2 ✅ 完成 — 呼吸圆 + 点击播放/停止 mp3，用户肉眼确认
-**下一步**: Phase 0 Step 3 — Privy 登录（拿到 evm_address）
-**playbook**: `playbook/phase-0-minimal.md` Step 3
+**做到哪**: Phase 0 Step 3 ✅ 完成 — Privy 邮箱登录 + console 打印 evm_address，用户确认
+**下一步**: Phase 0 Step 4 — Supabase 建 2 张表（users, mint_queue）
+**playbook**: `playbook/phase-0-minimal.md` Step 4
 
 ### 续做指南（下次会话第一件事读这段）
 
-Step 2 已收尾（commit `eb1d7fb`）。下次会话直接读 `playbook/phase-0-minimal.md` 的 Step 3：
-- 目标：右上角"登录"按钮，邮箱登录后 console 打印 evm_address
-- 需要装 `@privy-io/react-auth` + `@privy-io/server-auth`，新建 `src/lib/privy.ts` + `src/hooks/useAuth.ts` + `src/components/auth/LoginButton.tsx`，改 `app/layout.tsx` + `app/page.tsx`
-- tsconfig `@/*` 映射到项目根 `"./*"`，所以 src 下的文件 import 要写 `@/src/...`
+Step 0-3 全部完成 = "前端能跑"里程碑。Step 3 commit `8ac1eaf`。
+下次会话直接读 `playbook/phase-0-minimal.md` 的 Step 4：
+- 目标：Supabase Dashboard 建 `users` + `mint_queue` 两张表
+- AI 写 SQL 文件，用户去 Dashboard 粘贴执行
+- npm 装了 `--legacy-peer-deps`（ox 版本冲突），后续 install 也需要加这个 flag
+- tsconfig `@/*` 映射到项目根 `"./*"`，src 下的文件 import 要写 `@/src/...`
 
 测试钱包地址：`0x306D3A445b1fc7a789639fa9115e308a34231633`（OP Sepolia 已领 faucet）
 
 ## 上次成功验证
 
-- 验证内容: Phase 0 Step 2 完成 — 呼吸圆 + 点击播放 mp3
+- 验证内容: Phase 0 Step 3 完成 — Privy 邮箱登录 + evm_address
 - 验证时间: 2026-04-09
-- 验证方式: `verify.sh` 全绿 + `npm run dev` 肉眼确认
-- 通过的 commit: `eb1d7fb`
+- 验证方式: `verify.sh` 全绿 + 浏览器登录流程 + console 确认地址
+- 通过的 commit: `8ac1eaf`
 
 ## 当前阻塞
 
