@@ -1,15 +1,19 @@
-import type { Track } from '@/src/types/tracks';
-import { MOCK_TRACKS } from './mock-tracks';
+import type { Track, TracksListResponse } from '@/src/types/tracks';
 
 /**
  * 数据适配层 — 页面组件只通过这里获取 track 数据
- * Track B（当前）：返回假数据
- * Track C 替换为：fetch('/api/tracks').then(r => r.json())
+ * Track C：从真实 API 读取
  */
 export async function fetchTracks(): Promise<Track[]> {
-  return MOCK_TRACKS;
+  const res = await fetch('/api/tracks');
+  if (!res.ok) return [];
+  const data: TracksListResponse = await res.json();
+  return data.tracks;
 }
 
 export async function fetchTrackById(id: string): Promise<Track | null> {
-  return MOCK_TRACKS.find((t) => t.id === id) ?? null;
+  const res = await fetch(`/api/tracks/${id}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.track ?? null;
 }

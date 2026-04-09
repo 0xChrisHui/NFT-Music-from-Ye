@@ -1,11 +1,14 @@
-import type { OwnedNFT } from '@/src/types/tracks';
-import { MOCK_NFTS } from './mock-nfts';
+import type { OwnedNFT, MyNFTsResponse } from '@/src/types/tracks';
 
 /**
  * 数据适配层 — 个人页 NFT 数据
- * Track B（当前）：返回假数据
- * Track C 替换为：fetch('/api/me/nfts').then(r => r.json())
+ * Track C：从真实 API 读取（需要 auth token）
  */
-export async function fetchMyNFTs(): Promise<OwnedNFT[]> {
-  return MOCK_NFTS;
+export async function fetchMyNFTs(token: string): Promise<OwnedNFT[]> {
+  const res = await fetch('/api/me/nfts', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return [];
+  const data: MyNFTsResponse = await res.json();
+  return data.nfts;
 }

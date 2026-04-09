@@ -13,17 +13,20 @@ import EmptyState from '@/src/components/me/EmptyState';
  * 未登录：提示登录。已登录：显示 NFT 列表或空状态。
  */
 export default function MePage() {
-  const { ready, authenticated, login } = useAuth();
+  const { ready, authenticated, login, getAccessToken } = useAuth();
   const [nfts, setNfts] = useState<OwnedNFT[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!authenticated) return;
-    fetchMyNFTs().then((data) => {
-      setNfts(data);
-      setLoaded(true);
+    getAccessToken().then((token) => {
+      if (!token) return;
+      fetchMyNFTs(token).then((data) => {
+        setNfts(data);
+        setLoaded(true);
+      });
     });
-  }, [authenticated]);
+  }, [authenticated, getAccessToken]);
 
   if (!ready) return null;
 
