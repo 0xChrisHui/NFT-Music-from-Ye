@@ -7,7 +7,7 @@
 
 ## 🎯 Now（最多 1 件，AI 正在做的）
 
-- **[Phase 0 Step 1]** 调整首页为全屏深色 + 中央白色小字 "Ripples in the Pond"
+- （空，等用户发起下一步）
 
 ---
 
@@ -49,6 +49,7 @@
   - AGENTS 加 3 名映射 + 越界停 + 复述代码规则
   - 新增 INDEX.md / PROMPT-TEMPLATE.md / learn.sh
 - **[Phase 0 Step 0]** ✅ 完成（2026-04-09）— 项目改名 Ripples in the Pond + GitHub rename + 3 外部账号注册 + .env.local 10 key 填齐 + 测试钱包生成并领 OP Sepolia faucet + doctor.sh 26 ✅ / 2 ⚠（Foundry）/ 0 ❌ + checkpoint `checkpoint/2026-04-09-1226`
+- **[Phase 0 Step 1]** ✅ 完成（2026-04-09）— 全屏黑底 + 中央白字 "Ripples in the Pond"，commit `6523c60`
 
 ---
 

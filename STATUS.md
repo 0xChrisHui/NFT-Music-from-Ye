@@ -12,26 +12,26 @@
 
 ## 当前进度
 
-**做到哪**: Phase 0 Step 0 ✅ 完成 — 3 个外部账号已注册、`.env.local` 10 key 填齐、doctor.sh 26 ✅ / 2 ⚠（Foundry 预期）/ 0 ❌、checkpoint `checkpoint/2026-04-09-1226` 已建
-**下一步**: Phase 0 Step 1 — Next.js 项目调整成深色首页（项目已初始化，只改首页背景 + 加产品名字）
-**playbook**: `playbook/phase-0-minimal.md` Step 1
+**做到哪**: Phase 0 Step 1 ✅ 完成 — 全屏黑底 + 中央白字 "Ripples in the Pond"，verify.sh 全绿，用户肉眼确认
+**下一步**: Phase 0 Step 2 — Island 组件（呼吸圆）+ 点击播放本地 mp3
+**playbook**: `playbook/phase-0-minimal.md` Step 2
 
 ### 续做指南（下次会话第一件事读这段）
 
-Step 0 已全部收尾，Phase 0 Step 1 还没开始。下次会话直接读 `playbook/phase-0-minimal.md` 的 Step 1：
-- 目标：浏览器访问 http://localhost:3000 看到全屏深色页 + 中央白色小字 "Ripples in the Pond"
-- 项目已经 next init 过了，只需要改首页（`src/app/page.tsx`）+ 全局样式（`src/app/globals.css`）
-- 不要装新包，不要碰 layout 之外的东西
-- 完成后跑 `npm run dev` 肉眼验证 + 跑 `bash scripts/checkpoint.sh "Phase 0 Step 1 完成"`
+Step 1 已收尾（commit `6523c60`）。下次会话直接读 `playbook/phase-0-minimal.md` 的 Step 2：
+- 目标：首页中央一个柔和蓝色呼吸圆，点击播放 `public/tracks/001.mp3`
+- 需要新建 `src/components/archipelago/Island.tsx` + `src/hooks/useAudioPlayer.ts`，改 `app/page.tsx`
+- 提醒用户先在 `public/tracks/` 放一个 `001.mp3`
+- 不引入任何音频库，用 Web Audio API
 
 测试钱包地址：`0x306D3A445b1fc7a789639fa9115e308a34231633`（OP Sepolia 已领 faucet）
 
 ## 上次成功验证
 
-- 验证内容: Phase 0 Step 0 完成 — 项目改名为 Ripples in the Pond + 3 外部账号注册 + .env.local 填齐 + doctor.sh 全绿 + 首个 checkpoint
+- 验证内容: Phase 0 Step 1 完成 — 深色首页 + 产品名
 - 验证时间: 2026-04-09
-- 验证方式: `bash scripts/doctor.sh`（26 ✅ / 2 ⚠ / 0 ❌）+ `bash scripts/checkpoint.sh`
-- 通过的 commit: `cd456ff`（checkpoint: Phase 0 起点演练）/ tag `checkpoint/2026-04-09-1226`
+- 验证方式: `verify.sh` 全绿 + `npm run dev` 肉眼确认
+- 通过的 commit: `6523c60`
 
 ## 当前阻塞
 
