@@ -13,14 +13,20 @@
 
 ## ⏭ Next（接下来 1-3 件）
 
-- **[Codex Review]** Phase 0 完成后 review（按 playbook 末尾流程）
-- **[Phase 1]** 待规划
+- **[Phase 1 Step 0]** 建 tracks + mint_events 表，清理 Foundry 模板文件
+- **[Phase 1 Step 1]** 自定义 MaterialNFT 合约（替换 OZ Preset）+ 重新部署
+- **[Phase 1 Step 2]** tracks 数据填充 + 单曲详情 API（GET /api/tracks/[id]）
 
 ---
 
-## 📅 Later（Phase 0 剩余）
+## 📅 Later（Phase 1 剩余）
 
-- （Phase 0 全部完成）
+- **[Phase 1 Step 3]** 首页改版：岛屿列表（从 tracks 读取）+ 首次引导动画
+- **[Phase 1 Step 4]** 底部播放条（全局固定，切页不断）
+- **[Phase 1 Step 5]** 铸造按钮接入前端：Island 点击 → 调 mint API → 状态反馈
+- **[Phase 1 Step 6]** 个人页基础版：我的 NFT 列表 + pending 状态
+- **[Phase 1 Step 7]** 端到端验证：登录 → 浏览 → 播放 → 铸造 → 个人页看到 NFT
+- **[Phase 1 杂务]** 补齐 LEARNING.md / ERRORS.md，合约 URI 换真实地址
 
 ---
 
@@ -53,6 +59,8 @@
 - **[Phase 0 Step 6]** ✅ 完成（2026-04-09）— POST /api/mint/material 幂等写队列 + Supabase 确认，commit `b4fdc2a`
 - **[Phase 0 Step 7]** ✅ 完成（2026-04-09）— cron 处理器上链成功，tx `0xe4ae06a...ec9b1d`，commit `3c93a1c`
 - **[Phase 0 Step 8]** ✅ 完成（2026-04-09）— 全链路验证通过：登录 → API → 队列 → 链上 mint → Etherscan 确认
+- **[Codex Review]** ✅ 完成（2026-04-09）— 两份 review 产出 + 延后清单
+- **[Phase 0 Review Fix]** ✅ 完成（2026-04-09）— 原子抢单 / 失败补偿绑 job.id / 并发幂等 / 登出恢复，commit `3906f1f`
 
 ---
 
