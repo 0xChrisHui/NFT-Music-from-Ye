@@ -13,15 +13,15 @@
 
 ## ⏭ Next（接下来 1-3 件）
 
-- **[Phase 0 Step 5]** MaterialNFT 合约部署到 OP Sepolia（用 OZ 现成合约）
 - **[Phase 0 Step 6]** POST /api/mint/material（写队列 + 立即返回）
 - **[Phase 0 Step 7]** 手动触发 cron 端点
+- **[Phase 0 Step 8]** OP Sepolia Etherscan 看到 tx → 🎉
 
 ---
 
 ## 📅 Later（Phase 0 剩余）
 
-- **[Phase 0 Step 8]** OP Sepolia Etherscan 看到 tx → 🎉
+- （Phase 0 剩余步骤已提拔到 Next）
 
 ---
 
@@ -50,6 +50,7 @@
 - **[Phase 0 Step 2]** ✅ 完成（2026-04-09）— 呼吸圆 Island + useAudioPlayer hook + 点击播放/停止 mp3，commit `eb1d7fb`
 - **[Phase 0 Step 3]** ✅ 完成（2026-04-09）— Privy 邮箱登录 + LoginButton + console 打印 evm_address，commit `8ac1eaf`
 - **[Phase 0 Step 4]** ✅ 完成（2026-04-09）— Supabase 建 users + mint_queue 两张表，commit `e0105f5`
+- **[Phase 0 Step 5]** ✅ 完成（2026-04-09）— MaterialNFT 部署 OP Sepolia `0xdeC99da...1f02A`，commit `0a3ee93`
 
 ---
 
