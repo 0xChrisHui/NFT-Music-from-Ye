@@ -7,21 +7,20 @@
 
 ## 🎯 Now（最多 1 件，AI 正在做的）
 
-- **[Phase 0 Step 0]** 进行中 — baseline doctor.sh 已通过；用户正在注册 Privy / Supabase / Alchemy 三个外部账号；等账号好了 → 写 `.env.local` → 生成测试钱包 → OP Sepolia faucet 领 ≥ 0.02 OP-ETH → 二次 doctor.sh → 演练 checkpoint.sh
+- **[Phase 0 Step 1]** 调整首页为全屏深色 + 中央白色小字 "Ripples in the Pond"
 
 ---
 
 ## ⏭ Next（接下来 1-3 件）
 
-- **[Phase 0 Step 1]** Next.js 项目初始化 + 深色首页（项目已经初始化过，只需调整首页背景）
 - **[Phase 0 Step 2]** Island 组件（呼吸圆）+ 点击播放本地 mp3
 - **[Phase 0 Step 3]** Privy 登录（拿到 evm_address）
+- **[Phase 0 Step 4]** Supabase 建 2 张表（users, mint_queue），用 Dashboard 手动
 
 ---
 
 ## 📅 Later（Phase 0 剩余）
 
-- **[Phase 0 Step 4]** Supabase 建 2 张表（users, mint_queue），用 Dashboard 手动
 - **[Phase 0 Step 5]** MaterialNFT 合约部署到 OP Sepolia（用 OZ 现成合约）
 - **[Phase 0 Step 6]** POST /api/mint/material（写队列 + 立即返回）
 - **[Phase 0 Step 7]** 手动触发 cron 端点
@@ -49,7 +48,7 @@
   - hook 修 grep 误判 + ESLint 隐藏地雷 + 220 行硬线 + route.ts 270 + api/** 子树豁免
   - AGENTS 加 3 名映射 + 越界停 + 复述代码规则
   - 新增 INDEX.md / PROMPT-TEMPLATE.md / learn.sh
-- **[Phase 0 Step 0 - 部分]** baseline doctor.sh 已跑（17 ✅ / 3 ⚠ / 0 ❌）；.gitignore 已确认含 `.env*`
+- **[Phase 0 Step 0]** ✅ 完成（2026-04-09）— 项目改名 Ripples in the Pond + GitHub rename + 3 外部账号注册 + .env.local 10 key 填齐 + 测试钱包生成并领 OP Sepolia faucet + doctor.sh 26 ✅ / 2 ⚠（Foundry）/ 0 ❌ + checkpoint `checkpoint/2026-04-09-1226`
 
 ---
 

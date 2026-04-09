@@ -12,30 +12,26 @@
 
 ## 当前进度
 
-**做到哪**: Phase 0 Step 0 进行中 — baseline doctor.sh 已通过（17 ✅ / 3 ⚠ / 0 ❌）
-**下一步**: 等用户完成 Privy / Supabase / Alchemy 三个外部账号注册，把值填到 `.env.local`，然后再跑 doctor.sh 确认 + 演练 checkpoint.sh
-**playbook**: `playbook/phase-0-minimal.md` Step 0
+**做到哪**: Phase 0 Step 0 ✅ 完成 — 3 个外部账号已注册、`.env.local` 10 key 填齐、doctor.sh 26 ✅ / 2 ⚠（Foundry 预期）/ 0 ❌、checkpoint `checkpoint/2026-04-09-1226` 已建
+**下一步**: Phase 0 Step 1 — Next.js 项目调整成深色首页（项目已初始化，只改首页背景 + 加产品名字）
+**playbook**: `playbook/phase-0-minimal.md` Step 1
 
 ### 续做指南（下次会话第一件事读这段）
 
-用户上次离开时**正在注册 3 个外部账号**：
-1. **Privy**（https://dashboard.privy.io/）—— 创建 app，启用 Email 登录，启用 Embedded wallet "Create on login"，**Networks 加 OP Sepolia (11155420) + OP Mainnet (10)**，复制 App ID + App Secret
-2. **Supabase**（https://supabase.com/dashboard）—— 新建项目 ripples-dev，Region 选 Tokyo/Singapore，Free 计划，复制 Project URL + anon key + service_role key
-3. **Alchemy**（https://dashboard.alchemy.com/）—— 新建 app，**Chain = Optimism, Network = Optimism Sepolia**（不要选错），复制 HTTPS RPC URL
+Step 0 已全部收尾，Phase 0 Step 1 还没开始。下次会话直接读 `playbook/phase-0-minimal.md` 的 Step 1：
+- 目标：浏览器访问 http://localhost:3000 看到全屏深色页 + 中央白色小字 "Ripples in the Pond"
+- 项目已经 next init 过了，只需要改首页（`src/app/page.tsx`）+ 全局样式（`src/app/globals.css`）
+- 不要装新包，不要碰 layout 之外的东西
+- 完成后跑 `npm run dev` 肉眼验证 + 跑 `bash scripts/checkpoint.sh "Phase 0 Step 1 完成"`
 
-新会话开始时**先问用户**："上次注册的 3 个账号都搞定了吗？" 根据回答决定从哪一步继续：
-- 都好了 → 引导写 `.env.local`（10 个 key）+ 生成测试钱包 + 领 OP Sepolia faucet（https://app.optimism.io/faucet, ≥ 0.02 OP-ETH）
-- 卡在某个 → 帮用户排查那一个
-- 还没开始 → 引导从头开始（playbook Step 0 的"🤖 AI 执行指引"）
-
-完成 Step 0 全部后再演练 `bash scripts/checkpoint.sh "Phase 0 起点演练"`。
+测试钱包地址：`0x306D3A445b1fc7a789639fa9115e308a34231633`（OP Sepolia 已领 faucet）
 
 ## 上次成功验证
 
-- 验证内容: 项目地基整修 + 全面切到 Optimism + 文档大压缩
-- 验证时间: 2026-04-08
-- 验证方式: `bash scripts/verify.sh` 全绿
-- 通过的 commit: `1f13aac`（docs/arch 大整修 + OP 切链）
+- 验证内容: Phase 0 Step 0 完成 — 项目改名为 Ripples in the Pond + 3 外部账号注册 + .env.local 填齐 + doctor.sh 全绿 + 首个 checkpoint
+- 验证时间: 2026-04-09
+- 验证方式: `bash scripts/doctor.sh`（26 ✅ / 2 ⚠ / 0 ❌）+ `bash scripts/checkpoint.sh`
+- 通过的 commit: `cd456ff`（checkpoint: Phase 0 起点演练）/ tag `checkpoint/2026-04-09-1226`
 
 ## 当前阻塞
 
