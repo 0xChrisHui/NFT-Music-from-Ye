@@ -7,14 +7,14 @@
 
 ## 当前阶段
 
-**Phase**: Phase 2 重新规划中
+**Phase**: Phase 2 执行中
 **目标**: Phase 2 — 合奏 + 草稿系统（方向调整：Patatap 风格首页融合）
 
 ## 当前进度
 
-**做到哪**: Step 0 spike ✅ + A0 表已建 + B0 骨架已写（但方向需调整）
-**下一步**: 重新设计 Phase 2 playbook（首页=全屏乐器+岛屿融合方案）
-**playbook**: `playbook/phase-2/` 待重写
+**做到哪**: Track A 后端完成（A0-A4 ✅，A5 跳过）+ Track B 前端完成（B0-B4 ✅，commit `5dd2d95`）
+**下一步**: C0 merge Track B + 开始集成
+**playbook**: `playbook/phase-2/track-c-integration.md`
 
 ### 续做指南（下次会话第一件事读这段）
 
