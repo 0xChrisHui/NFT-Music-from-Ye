@@ -13,7 +13,7 @@
 ## 当前进度
 
 **做到哪**: Phase 2 全部完成（Track A + B + C ✅），C4 浏览器验证通过
-**下一步**: merge 回 main
+**下一步**: 先读 `reviews/2026-04-10-phase-2-cto.md`，决定是否插入 `Phase 2.5 — Flow Hardening Sprint` 再进入 Phase 3
 **playbook**: `playbook/phase-2/track-c-integration.md`
 
 ### 续做指南（下次会话第一件事读这段）
@@ -39,7 +39,7 @@
 
 ## 上次成功验证
 
-- 验证内容: Phase 2 全流程 — 音效 + 录制 + 爱心收藏 + 铸造上链 + 草稿 + /me
+- 验证内容: Phase 2 全流程 — 音效 + 录制 + 爱心收藏 + 铸造上链 + 草稿 + /me；CTO review 已完成
 - 验证时间: 2026-04-10
 - 验证方式: 浏览器 7 项清单全部通过 + cron 手动触发上链成功
 - 通过的 commit: `8fbc7ca`（C4 修复）
