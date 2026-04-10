@@ -42,7 +42,7 @@
 - 验证内容: Phase 2.5 全流程 — server-only + TTL 统一 + AudioContext 延迟 + 录制时钟统一 + verify.sh build + completion review 修复
 - 验证时间: 2026-04-10
 - 验证方式: verify.sh 全绿（含 npm run build）+ 浏览器录制测试通过
-- 通过的 commit: 待提交
+- 通过的 commit: `0a6bac9`
 
 ## 当前阻塞
 
