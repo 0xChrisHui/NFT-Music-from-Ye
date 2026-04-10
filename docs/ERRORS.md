@@ -29,7 +29,45 @@
 
 ---
 
-### （还没出错过 — 等待 Phase 0 Step 0 之后）
+### E001 — Tailwind v4 `Invalid code point 12675409`
+
+- 📅 2026-04-10 / Phase 2 Step 0（合奏 spike）
+
+- 😱 `RangeError: Invalid code point 12675409` at `tailwindcss/dist/lib.js` → `markUsedVariable`
+
+- 🧠 Tailwind v4 默认扫描整个项目目录。`.claude/logs/` 里的日志文件含 Windows 路径如 `\c16951a6...`，Tailwind 的 CSS 转义解析器把 `\c16951` 当成十六进制转义，算出超范围 Unicode code point（12675409 > 0x10FFFF）崩溃。
+
+- 🔧 白名单方式限制 Tailwind 扫描范围：`@import "tailwindcss" source(none);` + `@source "app/**/*"; @source "src/**/*";`
+
+- 💡 Windows 路径的反斜杠 + 十六进制字符会被 CSS 解析器误读。Tailwind v4 扫描范围用白名单比黑名单可靠。
+
+---
+
+### E002 — Cursor 执行 `git checkout` 还原 globals.css
+
+- 📅 2026-04-10 / Phase 2 Step 0
+
+- 😱 通过 CLI/终端修改的 `globals.css` 修复内容，约 2-6 分钟后被还原成 git 中的旧版。ProcMon 抓到是 `git.exe checkout app/globals.css`。
+
+- 🧠 Cursor 编辑器检测到 git 仓库后，会在后台执行 `git checkout` 恢复文件到 git 版本。只要 git 里的版本是旧的，Cursor 就会反复还原。
+
+- 🔧 把修复提交到 git（`git commit`），这样 Cursor 的 `git checkout` 恢复的就是正确版本。
+
+- 💡 外部修改被 git tracked 的文件后，必须及时提交，否则 Cursor 等编辑器可能通过 git 还原。
+
+---
+
+### E003 — 背景音乐快速点击叠加
+
+- 📅 2026-04-10 / Phase 2 Step 0
+
+- 😱 快速连续点击"播放背景"按钮，会触发多条音轨同时播放。
+
+- 🧠 `startBg` 是异步函数（fetch + decode），第一次点击还没完成时 `bgPlaying` 还是 false，第二次点击又触发一次 `startBg`。
+
+- 🔧 加 `bgLoadingRef` 锁，进入时检查、退出时释放。同时在 startBg 开头停掉旧的 source。
+
+- 💡 异步操作的开关按钮必须加锁，React 的 state 更新是异步的，不能依赖 state 做互斥。
 
 ---
 
@@ -38,10 +76,11 @@
 随着错误积累，AI 会在这里维护一份按类型分类的索引：
 
 ### 浏览器 / Web API
-- （空）
+- E003 背景音乐快速点击叠加
 
 ### Next.js / React
-- （空）
+- E001 Tailwind v4 扫描 `.claude/logs/` 导致 Invalid code point
+- E002 Cursor autoSave 覆盖外部修改
 
 ### TypeScript
 - （空）

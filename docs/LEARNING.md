@@ -32,10 +32,38 @@
 
 ---
 
-### （等待 Phase 0 Step 0 启动后填充）
+### Tailwind CSS
+- **是什么**：一个 CSS 工具库，让你用类名（如 `text-white bg-black`）直接写样式，不需要自己写 CSS 文件。v4 版本会自动扫描项目文件找出你用了哪些类名。
+- **类比**：像一本巨大的样式菜单，你只说菜名（类名），它帮你做出来。但 v4 的"自动扫描"功能像一个太勤快的实习生，会翻遍办公室所有文件夹。
+- **第一次出现**：`app/globals.css`（`@import "tailwindcss"`），Phase 0 初始化
 
-第一个概念会在 Phase 0 Step 1 真正开始写代码时由 AI 自动添加到这里。
-你不需要手动写任何东西。
+---
+
+### Web Audio API
+- **是什么**：浏览器内置的音频引擎，可以低延迟地播放、叠加、变调多个音源。核心对象是 `AudioContext`。
+- **类比**：一个小型录音棚——`AudioContext` 是调音台，`BufferSource` 是播放器，`GainNode` 是音量旋钮，全部用线（`connect`）连起来最后接到音箱（`destination`）。
+- **第一次出现**：`src/spike/useJamAudio.ts`，Phase 2 Step 0
+
+---
+
+### AudioContext 的用户手势要求
+- **是什么**：浏览器安全策略要求 AudioContext 必须在用户点击/按键后才能启动（`resume`），不能页面一加载就自动播放声音。
+- **类比**：像餐厅里不能自己去厨房拿菜，必须先举手叫服务员（用户手势），服务员才会帮你上菜（播放音频）。
+- **第一次出现**：`src/spike/useJamAudio.ts:29`（`getContext` 里的 `resume`），Phase 2 Step 0
+
+---
+
+### useCallback + 闭包陷阱
+- **是什么**：React 的 `useCallback` 会缓存函数，但函数内部引用的变量可能是创建时的旧值（闭包）。如果依赖项写错，回调里拿到的是过期数据。
+- **类比**：你拍了一张照片（闭包），照片里的东西是拍照那一刻的样子。即使现实已经变了，照片不会自动更新。用 `useRef` 可以绕过这个问题，因为 ref 像一个"实时监控画面"而不是照片。
+- **第一次出现**：`src/spike/useJamAudio.ts:46`（`playKick` 改用 `ctxRef.current` 避免闭包问题），Phase 2 Step 0
+
+---
+
+### 异步操作加锁（防抖）
+- **是什么**：异步函数（如 fetch）执行期间，用户可能再次触发同一操作。用一个布尔 flag（锁）防止重复执行。
+- **类比**：电梯门正在关的时候，按钮会暂时失效，防止门反复开关。
+- **第一次出现**：`src/spike/useJamAudio.ts:76`（`bgLoadingRef` 防止快速点击叠加背景音乐），Phase 2 Step 0
 
 ---
 

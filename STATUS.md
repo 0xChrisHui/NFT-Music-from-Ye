@@ -7,40 +7,46 @@
 
 ## 当前阶段
 
-**Phase**: Phase 1 ✅ 完成 → Phase 2 规划完成，待执行
-**目标**: Phase 2 — 合奏 + 草稿系统
+**Phase**: Phase 2 重新规划中
+**目标**: Phase 2 — 合奏 + 草稿系统（方向调整：Patatap 风格首页融合）
 
 ## 当前进度
 
-**做到哪**: Phase 1 全部完成 + review 修复 + Phase 2 playbook v2 已就绪
-**下一步**: Phase 2 Step 0（Web Audio 合奏 spike 技术验证）
-**playbook**: `playbook/phase-2/` 全套（overview + step-0 + track-a/b/c）
+**做到哪**: Step 0 spike ✅ + A0 表已建 + B0 骨架已写（但方向需调整）
+**下一步**: 重新设计 Phase 2 playbook（首页=全屏乐器+岛屿融合方案）
+**playbook**: `playbook/phase-2/` 待重写
 
 ### 续做指南（下次会话第一件事读这段）
 
-Phase 2 计划已通过 CTO review 并修正为 v2。下次会话直接开始 Step 0 spike：
-- 读 `playbook/phase-2/step-0-spike.md`，通过 4 个标准后分线
-- 读 `playbook/phase-2/overview.md` 了解文件 ownership 和冻结契约
-- 共享类型：`src/types/jam.ts`（API 命名已冻结）
+**⚠️ 方向调整**：用户要求首页融合 Patatap 风格全屏乐器 + 现有岛屿列表。核心变化：
+- 首页即合奏——一进来就能按键触发音效，不跳转单独页面
+- 点击岛屿播放背景曲 = 自动开始录制（用户无感）
+- 曲子播完/点停止 → 才提示"你的创作已记录，24h 可铸造"
+- 铸造才需要登录，不铸造不登录完全 OK
+- Patatap 参考代码：`references/patatap/`（从 Downloads 搬入）
+- `feat/phase2-frontend` 分支有旧 B0 代码（`/jam/[trackId]` 路由方案），需重写
+- 共享类型：`src/types/jam.ts`（API 命名仍冻结）
 - 关键决策：Arweave 后移 Phase 3 / 草稿私有预览 / 录制上限 60s+500 事件
 - 合约地址（Phase 1）：`0x99F808bdE8E92f167830E4b9C62f92b81c664b7C`
 - API route 放在 `app/api/`；npm 用 `--legacy-peer-deps`；`@/*` 映射项目根
 - Foundry 在 `C:\foundry`
-- Phase 1 worktree `E:\Projects\nft-music-frontend` 可清理
+- **globals.css 已配白名单扫描**（`source(none)` + `@source`），因 `.claude/logs/` Windows 路径触发 Tailwind v4 bug
+- **Cursor 会执行 `git checkout` 还原未提交文件**，修改 globals.css 后必须立即 commit
+- globals.css 回写问题尚未彻底确认根因（ProcMon 监控中），每个 phase 结束时复查
 - 延后项：`reviews/phase-0-deferred.md` + `reviews/phase-1-deferred.md`
 
 测试钱包地址：`0x306D3A445b1fc7a789639fa9115e308a34231633`（OP Sepolia 已领 faucet）
 
 ## 上次成功验证
 
-- 验证内容: Phase 1 全链路 — 登录 → 浏览 tracks → 播放 → 铸造 → cron 上链 → 个人页看到 NFT
-- 验证时间: 2026-04-09
-- 验证方式: 浏览器完整流程 + Supabase 确认 mint_events
-- 通过的 commit: `bbb8ed9`（merge 回 main）
+- 验证内容: Phase 2 Step 0 spike — 键盘音效 + 背景混音 + 录制回放 + 移动端提示
+- 验证时间: 2026-04-10
+- 验证方式: 浏览器 4 项标准全部通过
+- 通过的 commit: `da9210d`（globals.css 路径修正）
 
 ## 当前阻塞
 
-- 无
+- 无（globals.css 已有 workaround，持续监控中）
 
 ## 备注（AI 写给下次会话的自己）
 
