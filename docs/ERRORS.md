@@ -37,9 +37,9 @@
 
 - 🧠 Tailwind v4 默认扫描整个项目目录。`.claude/logs/` 里的日志文件含 Windows 路径如 `\c16951a6...`，Tailwind 的 CSS 转义解析器把 `\c16951` 当成十六进制转义，算出超范围 Unicode code point（12675409 > 0x10FFFF）崩溃。
 
-- 🔧 白名单方式限制 Tailwind 扫描范围：`@import "tailwindcss" source(none);` + `@source "app/**/*"; @source "src/**/*";`
+- 🔧 最终修复：将 `.claude/logs/` 加入 `.gitignore`，Tailwind v4 自动跳过 gitignored 路径，`globals.css` 恢复默认 `@import "tailwindcss"`。之前的 `source(none)` 白名单方案是临时 workaround，已移除。
 
-- 💡 Windows 路径的反斜杠 + 十六进制字符会被 CSS 解析器误读。Tailwind v4 扫描范围用白名单比黑名单可靠。
+- 💡 Windows 路径的反斜杠 + 十六进制字符会被 CSS 解析器误读。根本解法是让 Tailwind 不扫描这些路径（gitignore），而非手动白名单。
 
 ---
 

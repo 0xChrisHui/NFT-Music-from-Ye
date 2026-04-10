@@ -30,9 +30,7 @@
 - 合约地址（Phase 1）：`0x99F808bdE8E92f167830E4b9C62f92b81c664b7C`
 - API route 放在 `app/api/`；npm 用 `--legacy-peer-deps`；`@/*` 映射项目根
 - Foundry 在 `C:\foundry`
-- **globals.css 已配白名单扫描**（`source(none)` + `@source`），因 `.claude/logs/` Windows 路径触发 Tailwind v4 bug
-- **Cursor 会执行 `git checkout` 还原未提交文件**，修改 globals.css 后必须立即 commit
-- globals.css 回写问题尚未彻底确认根因（ProcMon 监控中），每个 phase 结束时复查
+- ~~globals.css Tailwind v4 bug~~ ✅ 已彻底解决：`.claude/logs/` 加入 `.gitignore` 后 Tailwind 不再扫描，`globals.css` 已恢复默认 `@import "tailwindcss"`
 - 延后项：`reviews/phase-0-deferred.md` + `reviews/phase-1-deferred.md`
 
 测试钱包地址：`0x306D3A445b1fc7a789639fa9115e308a34231633`（OP Sepolia 已领 faucet）
@@ -46,7 +44,7 @@
 
 ## 当前阻塞
 
-- 无（globals.css 已有 workaround，持续监控中）
+- 无
 
 ## 备注（AI 写给下次会话的自己）
 
