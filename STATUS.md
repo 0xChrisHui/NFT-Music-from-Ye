@@ -12,8 +12,8 @@
 
 ## 当前进度
 
-**做到哪**: Track A 后端完成（A0-A4 ✅，A5 跳过）+ Track B 前端完成（B0-B4 ✅，commit `5dd2d95`）
-**下一步**: C0 merge Track B + 开始集成
+**做到哪**: Track C 集成完成（C0-C3 ✅），等用户浏览器验证后 C4 merge 回 main
+**下一步**: C4 用户浏览器验证 → merge 回 main
 **playbook**: `playbook/phase-2/track-c-integration.md`
 
 ### 续做指南（下次会话第一件事读这段）
@@ -39,10 +39,10 @@
 
 ## 上次成功验证
 
-- 验证内容: Phase 2 Step 0 spike — 键盘音效 + 背景混音 + 录制回放 + 移动端提示
+- 验证内容: Track C 集成 — verify.sh 全绿 + 代码走查 7 项清单
 - 验证时间: 2026-04-10
-- 验证方式: 浏览器 4 项标准全部通过
-- 通过的 commit: `da9210d`（globals.css 路径修正）
+- 验证方式: verify.sh（TS + ESLint + 文件大小 + 目录限制 + 危险代码）
+- 通过的 commit: `c31524c`（C1-C3 集成）
 
 ## 当前阻塞
 

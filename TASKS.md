@@ -28,12 +28,12 @@
 - **[B3]** ✅ 草稿存 localStorage + 录制完成提示
 - **[B4]** ✅ mobile 提示 + UI 打磨
 
-**Track C — 集成**
-- **[C0]** merge Track B
-- **[C1]** 适配层切换 mock → 真实 API
-- **[C2]** 爱心收藏 + 登录 → 草稿上传 → 铸造
-- **[C3]** 底部进度条 + 个人页草稿倒计时
-- **[C4]** 端到端验证 + merge 回 main
+**Track C — 集成** ✅（commit `c31524c`）
+- **[C0]** ✅ merge Track A（untracked → commit `ca1c67d`）
+- **[C1]** ✅ 适配层切换 mock → 真实 API
+- **[C2]** ✅ 爱心收藏 + 登录 → 草稿上传 → 铸造
+- **[C3]** ✅ 底部进度条 + 个人页草稿倒计时
+- **[C4]** 等用户浏览器验证 → merge 回 main
 
 延后项清单：`reviews/phase-0-deferred.md` + `reviews/phase-1-deferred.md`
 
