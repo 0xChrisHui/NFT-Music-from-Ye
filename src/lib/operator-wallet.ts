@@ -1,4 +1,4 @@
-// SERVER ONLY — 绝不能被前端 import
+import 'server-only';
 // 运营钱包：用项目方私钥代付 gas，替用户发交易
 
 import { createWalletClient, createPublicClient, http } from 'viem';

@@ -27,6 +27,9 @@
 - RPC：Alchemy 提供 OP Mainnet + OP Sepolia 端点
 - Etherscan 等价物：`optimistic.etherscan.io`（主网）/ `sepolia-optimism.etherscan.io`（测试网）
 
+### 安全
+- `server-only` — Next.js 编译期防护，阻止后端模块被前端 import
+
 ### 数据库
 - `@supabase/supabase-js` — Supabase 客户端
 - Supabase Free（PostgreSQL 托管）

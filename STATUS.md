@@ -7,13 +7,13 @@
 
 ## 当前阶段
 
-**Phase**: Phase 2.5 — Flow Hardening Sprint
+**Phase**: Phase 2.5 — Flow Hardening Sprint ✅ 完成
 **目标**: 把 Phase 2 从"可玩的作品"升级成"可信的作品系统"
 
 ## 当前进度
 
-**做到哪**: Phase 2 已 merge 回 main，Phase 2.5 playbook 已写好
-**下一步**: S0 — DB 加固 + server-only + TTL 文案对齐
+**做到哪**: Phase 2.5 全部完成（S0-S3b + completion review 修复）
+**下一步**: 提交 Phase 2.5 收口 commit，准备进入 Phase 3
 **playbook**: `playbook/phase-2.5-hardening.md`
 
 ### 续做指南（下次会话第一件事读这段）
@@ -39,10 +39,10 @@
 
 ## 上次成功验证
 
-- 验证内容: Phase 2 全流程 — 音效 + 录制 + 爱心收藏 + 铸造上链 + 草稿 + /me；CTO review 已完成
+- 验证内容: Phase 2.5 全流程 — server-only + TTL 统一 + AudioContext 延迟 + 录制时钟统一 + verify.sh build + completion review 修复
 - 验证时间: 2026-04-10
-- 验证方式: 浏览器 7 项清单全部通过 + cron 手动触发上链成功
-- 通过的 commit: `8fbc7ca`（C4 修复）
+- 验证方式: verify.sh 全绿（含 npm run build）+ 浏览器录制测试通过
+- 通过的 commit: 待提交
 
 ## 当前阻塞
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrivyClient } from '@privy-io/server-auth';
 import { supabaseAdmin } from '@/src/lib/supabase';
 import type { SaveScoreRequest, SaveScoreResponse, KeyEvent } from '@/src/types/jam';
+import { DRAFT_TTL_MS } from '@/src/lib/constants';
 
 /**
  * POST /api/score/save
@@ -19,7 +20,6 @@ const MAX_EVENTS = 500;
 const MAX_TIME_MS = 60_000;
 const MAX_DURATION_MS = 5_000;
 const MAX_BODY_KB = 100;
-const TTL_MS = 24 * 60 * 60 * 1000; // 24 小时
 
 /** 验证单个 KeyEvent 的字段范围 */
 function isValidEvent(e: unknown): e is KeyEvent {
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       // 允许 1 分钟时钟偏差
       return NextResponse.json({ error: 'createdAt 不能在未来' }, { status: 400 });
     }
-    if (now - createdMs > TTL_MS) {
+    if (now - createdMs > DRAFT_TTL_MS) {
       return NextResponse.json({ error: '草稿已过期（超过 24 小时）' }, { status: 400 });
     }
 
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
       .eq('status', 'draft');
 
     // 10. 插入新草稿
-    const expiresAt = new Date(createdMs + TTL_MS).toISOString();
+    const expiresAt = new Date(createdMs + DRAFT_TTL_MS).toISOString();
     const { data: score, error: insertError } = await supabaseAdmin
       .from('pending_scores')
       .insert({

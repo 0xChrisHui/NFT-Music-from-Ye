@@ -1,7 +1,7 @@
 import type { KeyEvent } from '@/src/types/jam';
+import { DRAFT_TTL_MS } from '@/src/lib/constants';
 
 const STORAGE_KEY = 'ripples_drafts';
-const TTL_MS = 24 * 60 * 60 * 1000; // 24 小时
 
 /** localStorage 中存储的单条草稿 */
 export interface Draft {
@@ -19,7 +19,7 @@ export function getDrafts(): Draft[] {
 
   const all: Draft[] = JSON.parse(raw);
   const now = Date.now();
-  return all.filter((d) => now - new Date(d.createdAt).getTime() < TTL_MS);
+  return all.filter((d) => now - new Date(d.createdAt).getTime() < DRAFT_TTL_MS);
 }
 
 /** 保存一条草稿（同一 trackId 覆盖旧的） */

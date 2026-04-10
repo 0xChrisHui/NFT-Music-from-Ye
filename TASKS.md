@@ -11,17 +11,12 @@
 
 ---
 
-## ⏭ Next（Phase 2.5 — Flow Hardening Sprint）
+## ⏭ Next
 
-**playbook**: `playbook/phase-2.5-hardening.md`
-
-- **[S0]** DB 加固 + server-only + TTL 真理源统一
-- **[S1]** AudioContext 延迟加载
-- **[S2]** 录制时钟源统一（消除双语义，删 performance.now）
-- **[S3a]** 合约 admin/minter 分离
-- **[S3b]** 统一 build/verify
+- Phase 3 规划（待定）
 
 延后项清单：`reviews/phase-0-deferred.md` + `reviews/phase-1-deferred.md`
+主网前必做：Deploy 脚本 admin/minter 分离 + save draft 事务化（见 `reviews/2026-04-10-phase-2.5-completion-review.md`）
 
 ---
 
@@ -33,6 +28,7 @@
 
 ## ✅ Done
 
+- **[Phase 2.5]** ✅ 完成（2026-04-10）— Flow Hardening Sprint：DB 唯一索引 + server-only + TTL 统一 + AudioContext 延迟加载 + 录制时钟统一 + verify.sh 纳入 build + completion review 修复（useJam 状态机 + startedAt 清理）
 - **[Phase 2]** ✅ 完成（2026-04-10）— 首页合奏 + 草稿系统 + 爱心收藏，merged 回 main。Track A（后端 API）+ Track B（前端 Codex）+ Track C（集成+验证+CTO review 修复）
 - **[Day 1]** 文档骨架首版：13 markdown（含 1 个 phase-0 playbook）+ 3 hooks + 3 scripts
 - **[Day 1 续]** 学习机制补丁：SessionStart hook + Stop hook + QUICKSTART.md + check-folder-size 加项目根例外

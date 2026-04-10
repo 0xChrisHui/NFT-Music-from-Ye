@@ -111,6 +111,16 @@ else
 fi
 echo ""
 
+# 6. 生产构建
+echo "── 6. 生产构建（npm run build）──"
+if npm run build 2>&1; then
+  echo "$OK 生产构建通过"
+else
+  echo "$FAIL 生产构建失败"
+  EXIT_CODE=1
+fi
+echo ""
+
 echo "================================================"
 if [ "$EXIT_CODE" -eq 0 ]; then
   echo "  $OK 所有验证通过"

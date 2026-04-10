@@ -11,8 +11,7 @@ import { saveScore, fetchMyScores } from '@/src/data/jam-source';
 import NFTCard from '@/src/components/me/NFTCard';
 import DraftCard from '@/src/components/me/DraftCard';
 import EmptyState from '@/src/components/me/EmptyState';
-
-const TTL_MS = 24 * 60 * 60 * 1000;
+import { DRAFT_TTL_MS } from '@/src/lib/constants';
 
 interface DisplayDraft {
   key: string;
@@ -32,7 +31,7 @@ export default function MePage() {
     return getDrafts().map((d, i) => ({
       key: `local-${d.trackId}`,
       title: `创作 - #${String(i + 1).padStart(2, '0')} - ${d.eventsData.length} 音符`,
-      expiresAt: new Date(new Date(d.createdAt).getTime() + TTL_MS).toISOString(),
+      expiresAt: new Date(new Date(d.createdAt).getTime() + DRAFT_TTL_MS).toISOString(),
     }));
   });
   const [loaded, setLoaded] = useState(() => getCachedNFTs().length > 0);
@@ -78,7 +77,7 @@ export default function MePage() {
         ...remaining.map((d, i) => ({
           key: `local-${d.trackId}`,
           title: `创作 - #${String(i + 1).padStart(2, '0')} - ${d.eventsData.length} 音符`,
-          expiresAt: new Date(new Date(d.createdAt).getTime() + TTL_MS).toISOString(),
+          expiresAt: new Date(new Date(d.createdAt).getTime() + DRAFT_TTL_MS).toISOString(),
         })),
       ];
       setDrafts(display);

@@ -30,27 +30,32 @@ export interface RecordingResult {
 /**
  * 录制 hook — 绑定 PlayerProvider 生命周期
  *
- * 播放开始 → 自动开始录制（console 提示）
- * 播放结束 / 超时 / 超事件数 → 自动停止录制（console 输出事件）
+ * 播放开始 → 自动开始录制
+ * 播放结束 / 超时 / 超事件数 → 自动停止录制
  * 没播放时按键 → 不录制
  *
- * 时间基准：performance.now() 相对于录制开始时间的偏移（毫秒）
- * （playbook 写 AudioContext.currentTime，但音效用独立 ctx，
- *   背景曲用 PlayerProvider 的 ctx，两者不共享。
- *   用 performance.now() 更简单且精度足够）
+ * 时间基准：背景曲 AudioContext.currentTime（秒→毫秒）
+ * 单一时钟源，录制回放与背景曲进度完全对齐
  */
 export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn {
-  const { subscribe } = usePlayer();
+  const { subscribe, getCurrentTime } = usePlayer();
   const [recording, setRecording] = useState(false);
 
-  const startTimeRef = useRef(0);
+  // 录制开始时的 AudioContext.currentTime（秒），作为时间零点
+  const audioStartRef = useRef(0);
   const eventsRef = useRef<KeyEvent[]>([]);
+  // pending 按键：key → 按下时的音频时间（毫秒，相对于录制开始）
   const pendingRef = useRef<Map<string, number>>(new Map());
   const trackIdRef = useRef('');
   const recordingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onCompleteRef = useRef(options.onComplete);
   useEffect(() => { onCompleteRef.current = options.onComplete; }, [options.onComplete]);
+
+  /** 当前音频时间相对于录制开始的偏移（毫秒） */
+  const audioElapsed = useCallback(() => {
+    return Math.round((getCurrentTime() - audioStartRef.current) * 1000);
+  }, [getCurrentTime]);
 
   const stopRecording = useCallback(() => {
     if (!recordingRef.current) return;
@@ -63,12 +68,12 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
     }
 
     // 把还没抬起的键强制结束
-    const now = performance.now();
-    pendingRef.current.forEach((downTime, key) => {
+    const nowMs = audioElapsed();
+    pendingRef.current.forEach((downTimeMs, key) => {
       eventsRef.current.push({
         key,
-        time: Math.round(downTime - startTimeRef.current),
-        duration: Math.round(now - downTime),
+        time: downTimeMs,
+        duration: Math.max(0, nowMs - downTimeMs),
       });
     });
     pendingRef.current.clear();
@@ -83,12 +88,12 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
       result.events,
     );
     onCompleteRef.current?.(result);
-  }, []);
+  }, [audioElapsed]);
 
   const startRecording = useCallback((trackId: string) => {
     eventsRef.current = [];
     pendingRef.current.clear();
-    startTimeRef.current = performance.now();
+    audioStartRef.current = getCurrentTime();
     trackIdRef.current = trackId;
     recordingRef.current = true;
     setRecording(true);
@@ -96,7 +101,7 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
     // 60 秒超时自动停止
     timerRef.current = setTimeout(stopRecording, MAX_DURATION_MS);
     console.log('[recorder] 录制开始');
-  }, [stopRecording]);
+  }, [stopRecording, getCurrentTime]);
 
   // 订阅播放生命周期
   useEffect(() => {
@@ -113,22 +118,22 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorderReturn
       stopRecording();
       return;
     }
-    pendingRef.current.set(key, performance.now());
-  }, [stopRecording]);
+    pendingRef.current.set(key, audioElapsed());
+  }, [stopRecording, audioElapsed]);
 
   const recordKeyUp = useCallback((key: string) => {
     if (!recordingRef.current) return;
-    const downTime = pendingRef.current.get(key);
-    if (downTime === undefined) return;
+    const downTimeMs = pendingRef.current.get(key);
+    if (downTimeMs === undefined) return;
     pendingRef.current.delete(key);
 
-    const now = performance.now();
+    const nowMs = audioElapsed();
     eventsRef.current.push({
       key,
-      time: Math.round(downTime - startTimeRef.current),
-      duration: Math.round(now - downTime),
+      time: downTimeMs,
+      duration: Math.max(0, nowMs - downTimeMs),
     });
-  }, []);
+  }, [audioElapsed]);
 
   // 清理定时器
   useEffect(() => {
