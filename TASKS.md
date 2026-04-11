@@ -13,14 +13,19 @@
 
 ## ⏭ Next
 
-- **Phase 3 Step S1** — 封面系统：生成 100 张测试封面 + `score_covers` 表 + 批量上 Arweave
-- 之后按 playbook 顺序：S2 ScoreNFT 合约 → S3 MintOrchestrator → S4 decoder.html → S5 API+cron → S6 公开回放页 → S7 收口
+- **Phase 3 Step S6** — `/score/[tokenId]` 公开回放页 + Next.js 动态 OG 分享卡
+  - 数据主路径：`mint_events.score_data`（DB 自包含）
+  - 灾备路径：链上 `tokenURI` → Arweave metadata → events.json
+  - 复用 `src/score-decoder/` 的 Web Audio 回放逻辑（或 iframe embed）
+  - `app/score/[tokenId]/opengraph-image.tsx` 社交分享卡
+- **Phase 3 Step S7** — 收口：个人页"我的乐谱"区域 + 8 项 e2e 验证清单 + STATUS/TASKS 标 Phase 3A 完成
 
 延后项清单：`reviews/phase-0-deferred.md` + `reviews/phase-1-deferred.md`
 
 **主网前必做**：
 - Deploy 脚本 admin/minter 分离 + save draft 事务化（见 `reviews/2026-04-10-phase-2.5-completion-review.md`）
-- **Turbo credits 监控**（2026-04-11 决定延后到 S5）：当前无提醒机制，credits 用完那天就是某次上传突然失败那天。S5 playbook 的"最小观测性"硬门槛里把 Turbo winc 余额一起监控，低于 10% 阈值告警。Phase 3 S0-S4 期间消耗可忽略，不紧急
+- **Turbo credits 监控的阈值告警**：S5 已交付最小观测性端点 `/api/cron/queue-status`，但 Turbo winc 余额监控还没接入。上线前改成"低于 10% 自动邮件告警"——Phase 3B 一起做
+- **Phase 3B — sync-chain-events cron**（playbook 要求的紧接步骤）：每 5 分钟从 last_synced_block 拉 ScoreNFT Transfer 事件，解决 OpenSea 转手后 DB 不知道的问题；需要 system_kv 表 + chain_events 表 + UNIQUE(tx_hash, log_index) 防重
 
 ---
 
@@ -32,6 +37,32 @@
 
 ## ✅ Done
 
+- **[Phase 3 Step S5]** ✅ 完成（2026-04-12）— 铸造 API + cron 5 步状态机 + 最小观测性：
+  - S5.a commit `7af6c39`：3 个 migrations（score_nft_queue + mint_score_enqueue RPC + extend mint_events）+ `POST /api/mint/score` + jam.ts 扩展类型
+  - S5.bc commit `8dc66c9`：cron 拆 3 文件（route / steps-upload / steps-chain）+ upload-sounds.ts 末尾追加 sounds map 上传 + `/api/cron/queue-status` 观测端点（放 cron/ 子目录避开 app/api/ 8 硬线）
+  - Migrations 按 Phase 重组到 `supabase/migrations/phase-0-2/` + `supabase/migrations/phase-3/` 子目录
+  - 端到端实测：pending_score "晨雾" (29 events) → RPC 入队 → 4 次 cron → 链上 ScoreNFT tokenId 2 → metadata Arweave `pXWRtrzz...s60`
+  - 硬门槛 4 条：CORS smoke ✓ / minting_onchain 幂等 ✓ / 观测端点 ✓ / OpenSea testnet 替代方案 ✓（Etherscan + 直接 fetch Arweave）
+  - OpenSea 已永久停 testnet 发现 + memory 记录
+- **[Phase 3 Step S4]** ✅ 完成（2026-04-11）— Score Decoder "网页唱片机"：
+  - commit `1713b5f`：`src/score-decoder/index.html`（12.63 KB，零依赖 vanilla JS + Web Audio）+ `scripts/arweave/upload-decoder.ts`
+  - decoder txId `FWy1XA-B8MvRAgsNgMfDSUBiXXjHNpK1A_fHWjsUAXg`（所有 ScoreNFT 共用一份）
+  - 本地双击 file:// 测试 1-2s 加载 + 播放 OK
+- **[Phase 3 Step S3]** ✅ 完成（2026-04-11）— MintOrchestrator + 权限授权 + 端到端 mint：
+  - commit `f018343`：`contracts/src/MintOrchestrator.sol` + test (12/12 pass) + deploy script 三步一 broadcast
+  - 部署地址 `0xcBE4Ce6a9344e04f30D3f874098E8858d7184336`
+  - 部署时 ScoreNFT.grantRole(MINTER_ROLE, orchestrator) + mintScore(deployer) → tokenId 1
+  - TBA 极薄开关保留（tbaEnabled 默认 false + 空 `_maybeCreateTba` 钩子）
+- **[Phase 3 Step S2]** ✅ 完成（2026-04-11）— ScoreNFT 合约 + Tailwind v4 根治：
+  - commit `a9a4847`：`contracts/src/ScoreNFT.sol`（ERC721URIStorage + AccessControl）+ test (10/10 pass) + deploy script
+  - 部署地址 `0xA65C9308635C8dd068A314c189e8d77941A7e99c`，name `"Ripples in the Pond Score (Testnet)"`，symbol `RIPS`
+  - tokenId 从 1 自增，mint / setTokenURI 两步分离（playbook D2 冻结决策）
+  - Tailwind v4 根治：`globals.css` 用 `@source not` 显式排除非源码目录，解决 `Invalid code point` bug（历史踩过 2 次）
+- **[Phase 3 Step S1]** ✅ 完成（2026-04-11）— 封面系统：
+  - commit `627fb9d`：`scripts/arweave/generate-covers.ts` seed 化 SVG 生成器 + `upload-covers.ts` 批量上链 + migration 008_score_covers
+  - 100 张 SVG 封面（1000x1000 深色渐变 + 6 条 sine 波形 + 编号），`data/covers/` 走 gitignore
+  - `data/cover-arweave-map.json` commit（100 个 Arweave txid）
+  - `score_covers` 表 100 条记录，支撑 S5 FOR UPDATE SKIP LOCKED 最少使用优先复用池
 - **[Phase 3 Step S0]** ✅ 完成（2026-04-11）— Arweave 工具链上线：
   - S0.a 骨架 commit `35aca7d`：`src/lib/arweave/` 子目录（index + core）+ CORS 实测脚本 + upload 骨架 + migration 007 + @ardrive/turbo-sdk 装包
   - S0.b 实产 commit `60c96ec`：激活 Turbo 上传 + 26 音效全部上链 + 5 tracks 回写 `arweave_url` + ARWEAVE_GATEWAYS 4→2 缩减 + scripts 重组进 arweave/ 子目录 + `_env.ts` helper + 充值工具链（generate-eth-wallet / wait-for-base-eth / topup-turbo）

@@ -7,36 +7,58 @@
 ## 当前阶段
 
 **Phase**: Phase 3 — Score NFT（乐谱 NFT + 封面 + 分享）
-**目标**: 草稿 → 可分享的 ScoreNFT（ERC-721），带封面、可在 OpenSea 听
+**进度**: **6/8 step 完成**（S0-S5 ✅ / S6-S7 ⏳）
+**playbook**: `playbook/phase-3-score-nft.md`
 
 ## 当前进度
 
-**做到哪**: Step S0 完成（Arweave 工具链 + 26 音效 + 5 tracks 全部上链）
-**下一步**: Step S1 封面系统 — 生成 100 张测试封面 + score_covers 表 + 批量上 Arweave
-**playbook**: `playbook/phase-3-score-nft.md`
+**做到哪**: S5 完成 — 铸造 API + cron 5 步状态机 + 观测性端点
+**下一步**: **S6** — `/score/[tokenId]` 公开回放页 + Next.js OG 分享卡
+**剩余**: S6 → S7（收口验证清单 + 个人页升级）
 
 ### 续做指南（下次会话第一件事读这段）
 
-- S0 产物：`data/sounds-ar-map.json`（26 音效 txid）+ Supabase tracks 表 arweave_url 列已填
-- **Turbo 钱包**：`0xdE788249e747FB54c19e7B7F9baE85B631B9Fba8`（Base 链）
-  - JSON 文件在 `~/.ripples-secrets/turbo-wallet.json`（绝不进 git）
-  - 环境变量 `TURBO_WALLET_PATH` 指向它（在 `.env.local` 里）
-  - 当前余额 ~3.3T winc（够 Phase 3 + Phase 4 早期）
-- **补 credits 的 3 步**（余额低时用）：
-  1. MetaMask 切到 Base 网络 → 往 `0xdE788249e747FB54c19e7B7F9baE85B631B9Fba8` 转 ETH
-  2. `TURBO_WALLET_PATH='C:/Users/Hui/.ripples-secrets/turbo-wallet.json' npx tsx scripts/arweave/wait-for-base-eth.ts`
-  3. `TURBO_WALLET_PATH='C:/Users/Hui/.ripples-secrets/turbo-wallet.json' npx tsx scripts/arweave/topup-turbo.ts`
-- **ARWEAVE_GATEWAYS 已缩到 2 个**：`arweave.net` + `ario.permagate.io`（原 4 个里 3 个错列/被 ESET 拦）
-- **CORS 硬门槛 S0.b** 本机 2/2 smoke 通过；真验证推迟到 S6 浏览器跨设备手测
-- **本机 ESET 会拦部分 Web3 域名**（g8way.io / gateway.irys.xyz / ar-io.dev 等），见 memory
-- 合约地址（Phase 1 MaterialNFT）：`0x99F808bdE8E92f167830E4b9C62f92b81c664b7C`
-- OP Sepolia 测试钱包：`0x306D3A445b1fc7a789639fa9115e308a34231633`
+**Phase 3 链上产物（OP Sepolia）**：
+- ScoreNFT `0xA65C9308635C8dd068A314c189e8d77941A7e99c`
+- Orchestrator `0xcBE4Ce6a9344e04f30D3f874098E8858d7184336`
+- 已铸造 2 张：tokenId 1（S3 部署测试）+ tokenId 2（"晨雾" 29 events，S5 端到端实测）
+- 实测 mint tx: `0x596b723038108ea58a051fb9450c917c4df394914dc9b6d1a86d9b09b4ac4f73`
+
+**Arweave 静态产物（上链一次永不变）**：
+- decoder (S4): `FWy1XA-B8MvRAgsNgMfDSUBiXXjHNpK1A_fHWjsUAXg`
+- sounds map (S5.b): `fVpKvspVhusgUdn1FQr8j61jreFRZGKmiK3CyR0WO_8`
+- 26 音效索引: `data/sounds-ar-map.json`
+- 100 封面索引: `data/cover-arweave-map.json`
+- decoder record: `data/decoder-ar.json`
+
+**实测 Ripples #2 的完整 metadata** （S6 可以参考）：
+- metadata JSON: `https://ario.permagate.io/pXWRtrzzJeYdAXeMVVPm_X0GstBe_NPQIErwwlzrs60`
+- image（封面 001）: `https://ario.permagate.io/K0NAVlE00l6RhefjO7lZKqrG_HTSM9DglDhCC7UnhIo`
+- animation_url（decoder + events）格式验证通过
+
+**.env.local Phase 3 新增字段（5 个，已配，注释见文件内）**：
+`NEXT_PUBLIC_SCORE_NFT_ADDRESS` / `NEXT_PUBLIC_ORCHESTRATOR_ADDRESS` /
+`SCORE_DECODER_AR_TX_ID` / `SOUNDS_MAP_AR_TX_ID` / `TURBO_WALLET_PATH`
+（可选：`ADMIN_TOKEN` 用于 `/api/cron/queue-status`，未来测观测性端点时加）
+
+**Turbo 钱包**: `0xdE788249e747FB54c19e7B7F9baE85B631B9Fba8`（Base），余额约 3.3T winc。
+补 credits 流程见 `.env.local` 里 `TURBO_WALLET_PATH` 上方的注释。
+
+**DB schema**: `supabase/migrations/phase-0-2/` (001-006) + `supabase/migrations/phase-3/` (007-011) 全部在 Supabase 执行完毕。migrations 按 Phase 子目录组织，执行顺序见 `supabase/migrations/README.md`。
+
+**长期生效的决策补丁（别忘）**：
+- ARWEAVE_GATEWAYS 缩到 2 个：`arweave.net` + `ario.permagate.io`
+- Tailwind v4 `globals.css` 用 `@source not` 显式排除非源码目录（contracts / data / scripts / ...）
+- ESET 拦部分 Web3 域名，本机 CORS 测试只是 smoke，真验证延到 S7
+- **OpenSea 已永久停 testnet**，硬门槛改用 Etherscan + 直接 fetch Arweave 替代方案
+- 用户默认 **PowerShell**，命令优先"加进 `.env.local` + 直接跑"模式
+- `app/api/` 硬线豁免缺失：hook 只认 `src/app/api/`，当前 app/api/ 接近 8 上限，新 route 考虑复用现有子目录（见 S5.c 放 `cron/queue-status/`）
 
 ## 上次成功验证
 
-- 验证内容: Phase 3 S0.b — Turbo 充值 + 26 音效上传 + 5 tracks 回写 + CORS smoke 2/2
-- 验证时间: 2026-04-11
-- 通过的 commit: `be4e07a`
+- 验证: Phase 3 S5 端到端 — RPC 入队 → cron 5 步状态机 → 链上 mint tokenId 2 → Arweave metadata viewer ✅
+- 时间: 2026-04-12
+- commit: `8dc66c9`
 
 ## 当前阻塞
 
@@ -44,10 +66,10 @@
 
 ## 备注
 
-- 项目命名：仓库/代号 `ripples-in-the-pond`（本地文件夹仍是 `nft-music`）
+- 仓库/代号 `ripples-in-the-pond`（本地文件夹仍是 `nft-music`）
 - 链：OP Mainnet（生产）/ OP Sepolia（测试）；Arweave credits 走 Base L2
-- Next.js 16.1.6 + React 19；Windows + Git Bash；`--legacy-peer-deps`；`@/*` 映射项目根
-- Foundry 在 `C:\foundry`
-- 学习模式: slow mode（默认），用户自称小白，命令要给完整路径
-- 文件硬线 220 行 / 目录 8 文件；`src/app/api/**` 子树豁免目录限制
+- Next.js 16.1.6 + React 19；Windows + PowerShell 主 + Git Bash 辅（Claude 用）
+- 学习模式 slow mode；用户自称小白，命令必须给完整路径
+- 文件硬线 220 行 / 目录 8 文件
 - 决策日志 `docs/JOURNAL.md` / 文档地图 `docs/INDEX.md`
+- memory 系统: `C:\Users\Hui\.claude\projects\E--Projects-nft-music\memory\` 已积累 7 条长期偏好/约束
