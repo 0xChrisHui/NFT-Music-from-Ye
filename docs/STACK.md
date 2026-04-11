@@ -46,6 +46,9 @@
 ### Arweave
 - `@ardrive/turbo-sdk` — 信用卡支付，无需 AR 代币
 
+### 开发工具（devDependencies，不进生产）
+- `tsx` — 一次性脚本的 TS 运行器（Phase 3 `scripts/upload-*.ts` / `verify-arweave-cors.ts` 用）。仅 devDependency，不进 Next.js 生产 bundle，生产运行时对它零依赖。
+
 ### 部署
 - Vercel Hobby（Phase 0-1 免费）
 - Vercel Cron（每分钟最快）
