@@ -1,0 +1,44 @@
+# Supabase Migrations
+
+Migration 文件按 **Phase** 分子目录（目录文件数 ≤ 8 硬线触发的重组，见 CONVENTIONS.md §1.2）。
+
+## 按编号顺序执行
+
+无论在哪个子目录下，**都必须按编号从小到大跑**（001 → 011 → …）。文件名前缀编号是权威执行顺序。
+
+### Phase 0-2（`phase-0-2/`）
+- `001_initial_minimal.sql` — users + mint_queue 基础表
+- `002_claim_pending_job.sql` — 原子抢单 RPC
+- `003_tracks_and_mint_events.sql` — Phase 1 tracks + mint_events
+- `004_mint_uniqueness_and_colors.sql` — Phase 1 review 修复
+- `005_pending_scores.sql` — Phase 2 合奏草稿
+- `006_pending_scores_unique.sql` — Phase 2.5 唯一索引
+
+### Phase 3（`phase-3/`）
+- `007_tracks_add_arweave_url.sql` — S0.a tracks 表加 arweave_url 列
+- `008_score_covers.sql` — S1 封面复用池
+- `009_score_nft_queue.sql` — S5.a 乐谱 NFT 铸造队列
+- `010_mint_score_rpc.sql` — S5.a 事务 RPC（封面分配 + 入队 + 草稿 expired）
+- `011_extend_mint_events.sql` — S5.a mint_events 扩展字段
+
+## 新人第一次建库
+
+在 Supabase Dashboard → SQL Editor，按下面顺序一条条粘贴执行：
+
+```bash
+# 按树遍历，深度优先，按文件名排序
+find supabase/migrations -name "*.sql" | sort
+```
+
+## 新增 migration
+
+1. 找到当前最大编号（跨所有子目录），`+1`
+2. 放到对应 Phase 的子目录下
+3. 如果子目录满了（≥ 8 文件），新开子目录
+4. 更新本 README 的清单
+
+## 为什么按 Phase 分组
+
+- 目录文件数 ≤ 8 硬线（`check-folder-size.js`）
+- Phase 3 会新增很多 migration，只拆 Phase 3 不如全部拆到统一风格
+- 同 Phase migration 有语义关联，便于回顾历史

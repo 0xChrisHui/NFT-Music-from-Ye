@@ -93,3 +93,65 @@ export interface MyScoresResponse {
     expiresAt: string;
   }[];
 }
+
+// ─────────────────────────────────────────────────
+// Phase 3 S5 — ScoreNFT 铸造队列 + metadata
+// ─────────────────────────────────────────────────
+
+/** score_nft_queue 5 步状态机 */
+export type ScoreMintStatus =
+  | 'pending'
+  | 'uploading_events'
+  | 'minting_onchain'
+  | 'uploading_metadata'
+  | 'setting_uri'
+  | 'success'
+  | 'failed';
+
+/** score_nft_queue 表的一行 */
+export interface ScoreMintQueueRow {
+  id: string;
+  user_id: string;
+  pending_score_id: string;
+  track_id: string;
+  cover_ar_tx_id: string;
+  events_ar_tx_id: string | null;
+  metadata_ar_tx_id: string | null;
+  token_id: number | null;
+  token_uri: string | null;
+  status: ScoreMintStatus;
+  retry_count: number;
+  last_error: string | null;
+  tx_hash: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** OpenSea ERC-721 metadata 标准
+ *  S5 cron 在 uploading_metadata 阶段生成并上传 Arweave */
+export interface ScoreMetadata {
+  name: string;
+  description: string;
+  /** ar:// 或 https://arweave.net/... 指向封面 */
+  image: string;
+  /** ripples.app/score/[tokenId] */
+  external_url?: string;
+  /** decoder.html + URL 参数 = 网页唱片机 */
+  animation_url: string;
+  attributes?: Array<{
+    trait_type: string;
+    value: string | number;
+  }>;
+}
+
+/** API 请求体：POST /api/mint/score */
+export interface MintScoreRequest {
+  pendingScoreId: string;
+}
+
+/** API 响应：POST /api/mint/score */
+export interface MintScoreResponse {
+  queueId: string;
+  coverArTxId: string;
+  coverUrl: string;
+}
