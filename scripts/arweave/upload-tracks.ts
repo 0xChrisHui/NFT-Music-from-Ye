@@ -1,13 +1,14 @@
 // 增量上传 public/tracks/*.mp3 到 Arweave，回写 tracks.arweave_url
-// 用法：npx tsx scripts/upload-tracks.ts
-// 前置：SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL + ARWEAVE_JWK_PATH
+// 用法：npx tsx scripts/arweave/upload-tracks.ts
+// 前置：SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL + TURBO_WALLET_PATH
 // 行为：查 tracks 表 arweave_url IS NULL 的行 → 对应文件存在则上传 → 回写
 //       文件不存在就跳过（预期——未来每周新曲上传一次，跑一次脚本）
 
+import '../_env';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
-import { uploadBuffer } from '../src/lib/arweave/core';
+import { uploadBuffer } from '../../src/lib/arweave/core';
 
 const ROOT = process.cwd();
 const TRACKS_DIR = join(ROOT, 'public', 'tracks');

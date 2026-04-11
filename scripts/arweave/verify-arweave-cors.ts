@@ -1,10 +1,11 @@
 // Arweave 多网关 CORS 实测 —— Phase 3 S0 硬门槛
 // 用法：
-//   npx tsx scripts/verify-arweave-cors.ts           # 用 /info 端点测网关活性 + CORS
-//   npx tsx scripts/verify-arweave-cors.ts <txId>    # 用真实文件测（S0.b 后跑）
+//   npx tsx scripts/arweave/verify-arweave-cors.ts           # 用 /info 端点测网关活性 + CORS
+//   npx tsx scripts/arweave/verify-arweave-cors.ts <txId>    # 用真实文件测（S0.b 后跑）
 // 判定：ARWEAVE_GATEWAYS 中至少 2 个网关满足 {status ok + Access-Control-Allow-Origin 合规}
 
-import { ARWEAVE_GATEWAYS } from '../src/lib/arweave/core';
+import '../_env';
+import { ARWEAVE_GATEWAYS } from '../../src/lib/arweave/core';
 
 const MOCK_ORIGIN = 'https://ripples-in-the-pond.example';
 const MIN_PASS = 2;

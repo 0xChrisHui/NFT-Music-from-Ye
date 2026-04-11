@@ -90,6 +90,7 @@
 - 26 个音效 + 已有底曲全部有 `ar://` 地址
 - 通过多网关至少一个能访问到文件
 - **硬门槛**：fallback 网关列表里至少 2 个网关通过 CORS 实测（浏览器 fetch 能成功加载音频 blob，`Access-Control-Allow-Origin` 响应头正确）——Decoder 的多网关兜底依赖这个，不实测等于纸面能力
+  - S0.b 补注（2026-04-11）：本机 `verify-arweave-cors.ts` 只作 **smoke test**——Windows 开发机的 ESET 防火墙 + 可能的网络环境会让测试失真，不能代表全球访客。真正的"全球可达"硬门槛推迟到 **S6 真部署 decoder.html 后**，在至少 2 个互相独立的网络环境（主机浏览器 + 手机 4G 或海外 VPN）手动打开一个 ScoreNFT 页面，确认 decoder 从两个网关都能加载音频——这一条进 S6 完成标准。
 - STACK.md 已登记 turbo-sdk
 - `verify.sh` 全绿
 

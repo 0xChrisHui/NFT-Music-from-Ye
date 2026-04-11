@@ -1,14 +1,24 @@
-// Arweave 核心工具：多网关 fallback + 上传占位
+// Arweave 核心工具：多网关 fallback + Turbo SDK 上传
 // 本文件不带 'server-only'，以便 scripts/ 在 tsx 下 import 同一份逻辑。
 // Next.js 运行时请统一从 '@/lib/arweave' (index.ts) 引入——那里有 server-only 守护。
 
+import { readFileSync } from 'node:fs';
+import {
+  TurboFactory,
+  type TurboAuthenticatedClient,
+  type TokenType,
+} from '@ardrive/turbo-sdk';
+
 // 多网关 fallback 列表，顺序即优先级
-// 硬门槛（playbook S0）：上线前至少 2 个网关 CORS 实测通过
+// 只保留两个经过本机 curl 探测确认可达 + Arweave 生态公认主力的网关：
+// - arweave.net       Arweave 官方主网关
+// - ario.permagate.io AR.IO 社区运营的第二大网关
+// Phase 3 S0 硬门槛：本机 verify-arweave-cors.ts 作 smoke test，
+// 真正的"全球可达"验证延后到 S6 真部署 decoder 后浏览器跨设备手测。
+// 注：早期版本列的 ar-io.dev / arweave.dev / gateway.irys.xyz 是错列/被 ESET 拦。
 export const ARWEAVE_GATEWAYS = [
   'https://arweave.net',
-  'https://ar-io.dev',
-  'https://arweave.dev',
-  'https://gateway.irys.xyz',
+  'https://ario.permagate.io',
 ] as const;
 
 export type ArweaveGateway = (typeof ARWEAVE_GATEWAYS)[number];
@@ -58,19 +68,52 @@ export async function fetchFromArweave(txId: string): Promise<Buffer> {
 
 export type UploadResult = { txId: string; url: string };
 
+type WalletFile = {
+  address: string;
+  privateKey: string;
+  token: TokenType;
+};
+
+let cachedClient: TurboAuthenticatedClient | null = null;
+
+/**
+ * 懒加载 Turbo 客户端。首次调用时读 TURBO_WALLET_PATH 指向的 JSON 文件，
+ * 用里面的 privateKey + token 初始化。后续调用返回缓存。
+ * 文件内容由 scripts/arweave/generate-eth-wallet.ts 生成。
+ */
+function getTurboClient(): TurboAuthenticatedClient {
+  if (cachedClient) return cachedClient;
+  const path = process.env.TURBO_WALLET_PATH;
+  if (!path) {
+    throw new Error(
+      'TURBO_WALLET_PATH 未配置。跑 scripts/arweave/generate-eth-wallet.ts 生成钱包',
+    );
+  }
+  const wallet = JSON.parse(readFileSync(path, 'utf-8')) as WalletFile;
+  cachedClient = TurboFactory.authenticated({
+    privateKey: wallet.privateKey,
+    token: wallet.token,
+  });
+  return cachedClient;
+}
+
 /**
  * 把 buffer 上传到 Arweave，返回 { txId, url }。
- *
- * ⚠️ Phase 3 S0.a：故意 throw NOT_FUNDED 防止未充值时误发上传。
- * 用户在 S0.b 充值 Turbo credits → 配置 ARWEAVE_JWK_PATH → 回到本函数把
- * 下面三行换成真实的 @ardrive/turbo-sdk 调用即可。函数签名不变。
+ * 内部走 Turbo SDK 签名 + 上传，credits 从 TURBO_WALLET_PATH 指向的钱包扣。
  */
 export async function uploadBuffer(
-  _buffer: Buffer,
-  _contentType: string,
+  buffer: Buffer,
+  contentType: string,
 ): Promise<UploadResult> {
-  throw new Error(
-    'ARWEAVE_NOT_FUNDED: Turbo credits 尚未配置。' +
-      'S0.b pending — 用户充值 Turbo → 设置 ARWEAVE_JWK_PATH → 激活 uploadBuffer 实现',
-  );
+  const client = getTurboClient();
+  const result = await client.upload({
+    data: buffer,
+    dataItemOpts: {
+      tags: [{ name: 'Content-Type', value: contentType }],
+    },
+  });
+  return {
+    txId: result.id,
+    url: resolveArUrl(result.id),
+  };
 }

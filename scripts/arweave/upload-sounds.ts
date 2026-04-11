@@ -1,9 +1,10 @@
 // 一次性上传 public/sounds/*.mp3 到 Arweave
-// 用法：npx tsx scripts/upload-sounds.ts
+// 用法：npx tsx scripts/arweave/upload-sounds.ts
 // 产物：data/sounds-ar-map.json（key -> { txId, url }）
 // 增量：已在 map 里的 key 会跳过，可反复运行
-// S0.a 阶段 uploadBuffer throw NOT_FUNDED，本脚本会在第一个文件处停住——这是预期
+// 前置：TURBO_WALLET_PATH 已配置 + Turbo credits 已到账
 
+import '../_env';
 import {
   readFileSync,
   readdirSync,
@@ -12,7 +13,7 @@ import {
   mkdirSync,
 } from 'node:fs';
 import { join } from 'node:path';
-import { uploadBuffer } from '../src/lib/arweave/core';
+import { uploadBuffer } from '../../src/lib/arweave/core';
 
 const ROOT = process.cwd();
 const SOUNDS_DIR = join(ROOT, 'public', 'sounds');
