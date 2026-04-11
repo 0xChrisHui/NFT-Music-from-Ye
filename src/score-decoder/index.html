@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="dark" />
+<title>Ripples in the Pond — Score Decoder</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #000; color: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  body { display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .stage { width: 100%; max-width: 520px; text-align: center; user-select: none; }
+  h1 { font-weight: 200; font-size: 18px; letter-spacing: 0.08em;
+    text-transform: uppercase; opacity: 0.65; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; opacity: 0.4; margin-bottom: 40px; }
+  #playBtn { width: 120px; height: 120px; border-radius: 50%;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18);
+    color: #fff; font-size: 42px; cursor: pointer; transition: all .2s ease;
+    display: inline-flex; align-items: center; justify-content: center; }
+  #playBtn:hover:not(:disabled) { background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.4); transform: scale(1.04); }
+  #playBtn:disabled { opacity: 0.3; cursor: not-allowed; }
+  #playBtn.playing { background: rgba(255,255,255,0.18); }
+  #status { margin-top: 24px; font-size: 13px; opacity: 0.55; min-height: 18px; }
+  .progress { margin-top: 18px; width: 100%; height: 2px;
+    background: rgba(255,255,255,0.1); border-radius: 1px; overflow: hidden; }
+  .progress-bar { height: 100%; width: 0%;
+    background: rgba(255,255,255,0.7); transition: width 0.1s linear; }
+  .meta { margin-top: 28px; font-size: 11px; opacity: 0.32;
+    letter-spacing: 0.03em; line-height: 1.5; font-family: ui-monospace, monospace; }
+  .keys { margin-top: 26px; display: grid;
+    grid-template-columns: repeat(13, 1fr); gap: 4px; font-family: ui-monospace, monospace; }
+  .key { padding: 8px 0; font-size: 11px;
+    background: rgba(255,255,255,0.04); border-radius: 3px;
+    opacity: 0.35; transition: all .12s ease; }
+  .key.flash { background: #fff; color: #000; opacity: 1; transform: scale(1.18); }
+  .err { color: #ff6b6b; opacity: 0.85; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <h1>Ripples in the Pond</h1>
+  <div class="subtitle">Score Decoder · Web Audio Player</div>
+  <button id="playBtn" disabled aria-label="Play">▶</button>
+  <div id="status">Loading audio assets...</div>
+  <div class="progress"><div id="bar" class="progress-bar"></div></div>
+  <div id="keys" class="keys"></div>
+  <div id="meta" class="meta"></div>
+</div>
+
+<script>
+"use strict";
+
+// ─────────────────────────────────────────────────
+// Constants — 多网关 fallback (Phase 3 S0 硬门槛冻结的两个)
+// ─────────────────────────────────────────────────
+const ARWEAVE_GATEWAYS = [
+  "https://arweave.net",
+  "https://ario.permagate.io",
+];
+
+// 内嵌默认数据（Demo 模式 / 无 URL 参数时使用）
+// Demo events 是手工编排的 8s 演示乐句
+const DEMO_BASE = "ar://qwL34NhT4fvuJHO9wLE2AcVwYrooXrkOSNRqiB1DSOE";
+const DEMO_SOUNDS = {
+  a: "IUhG1-KLOS141d5tezEiWWv6dU47-qhnHEWxi4pRCdc",
+  b: "h6OOWdHVsn2c9pYBnquflx85ZtHyd8g-GzzxOZOxaog",
+  c: "Rv8MMgZu6lOSLGQd1WywpkPxCYx_tisZHF7_pkYGCAE",
+  d: "oFxlJVSb6E6w2KkF36NL_KnqFr52BW2UrEMoCJDZ5-I",
+  e: "1hPCYBL0BqN5vGTtHQXC-IuRiujPyDRsc-S4D2gry48",
+  f: "rvi2aOKxmPW7ZNgKGzihn5l16D1L_ayz1KqxSYhbkFY",
+  g: "BCj9epEcMNcZ9WDtJ-S2nAHGQUbsAfOBRhcNkHfbXWk",
+  h: "635_HX8ANvnE8Nf3fiAdno8ughVCcY9ze4QjPzscbvw",
+  i: "xrXdGsdHZ2hR-AhGJAbOFuGJbetR_7R4PVHwh694mw4",
+  j: "-8QBKp_uxZdwyHF9CIgoBdFkAyipGys4krfEMLDA800",
+  k: "0gFdJVk4FrmGxuKQOwiovH3AINgfxcoPnb4MCo3BAPY",
+  l: "4CHkWf7R_rS-UtE5LBdT4MHr7PIU6k6Fr1b-EZGEiBg",
+  m: "aeKNhAXyIrYRmnc5LatUu47qWisQn05Prlu-Q3ECDU0",
+  n: "C9UePmBtqDrf5W-rvCuddxLgBlxSECbz57udhhUABmo",
+  o: "pg9jl45z2pIBY-S7NuOOaKR8hiUtBVJWjTIjeYudQqA",
+  p: "m_MYgwcC_xGvxkQp0d_L93Cc9aa0JjaQohJYX3bGBjE",
+  q: "LcRjeZMvY00zUpGAUOXma38DMV5XjwPc8QRziJYvdic",
+  r: "l6yepHwX_OGAEjhmKsMXuuLcwQRpMa4q9kkq-j_t2dQ",
+  s: "kjJ_QTKcRa2EvpDWwhzimBSYQ81LdxF0R2QHwxHMlbw",
+  t: "B8PW3wlyDJBiwAJXs4oUafoIcUaJLvVBEB4zonrGkls",
+  u: "H7Cg0HZKsxeiASE8nCu_yVDqruOeSZoB_jggE77Ztt4",
+  v: "VUUx4yagjA8btYUA-4xau-NZ4X2sbfK_JAan_NcLxOs",
+  w: "oV4W66I49IvS_2edz2Dp0mDk5Vo7OROdQ_TfDreNzCg",
+  x: "7a4Wh_sVEipQ5TKRY3_floANKh_YY4og2TogJYVixyQ",
+  y: "g9AAq6zlwHVyPF4hR2PEseEqydJ9XweGSPWHXnageAE",
+  z: "4yeXCsGiIh7Aoa2o8RrA30oiGQEiKeNrJ0TRSzc7yrk",
+};
+const DEMO_EVENTS = [
+  { key: "k", time:    0, duration: 200 },
+  { key: "a", time:  500, duration: 200 },
+  { key: "s", time: 1000, duration: 200 },
+  { key: "k", time: 1500, duration: 200 },
+  { key: "d", time: 2000, duration: 200 },
+  { key: "f", time: 2500, duration: 200 },
+  { key: "k", time: 3000, duration: 200 },
+  { key: "j", time: 3500, duration: 200 },
+  { key: "h", time: 4000, duration: 200 },
+  { key: "k", time: 4500, duration: 200 },
+  { key: "g", time: 5000, duration: 200 },
+  { key: "f", time: 5500, duration: 200 },
+  { key: "k", time: 6000, duration: 200 },
+  { key: "d", time: 6500, duration: 200 },
+  { key: "s", time: 7000, duration: 200 },
+  { key: "a", time: 7500, duration: 200 },
+];
+
+// ─────────────────────────────────────────────────
+// URL parsing
+// ─────────────────────────────────────────────────
+function getParams() {
+  const u = new URL(window.location.href);
+  return {
+    events: u.searchParams.get("events"),
+    base: u.searchParams.get("base"),
+    sounds: u.searchParams.get("sounds"),
+  };
+}
+
+// 把 ar://txid 或 普通 URL 解析成一组候选 fetch URL
+function resolveUrls(input) {
+  if (!input) return [];
+  if (input.startsWith("ar://")) {
+    const txid = input.slice(5);
+    return ARWEAVE_GATEWAYS.map((gw) => gw + "/" + txid);
+  }
+  return [input];
+}
+
+async function fetchWithFallback(input, asJson) {
+  const urls = resolveUrls(input);
+  if (urls.length === 0) throw new Error("empty input");
+  let lastErr;
+  for (const url of urls) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        lastErr = new Error(url + " → HTTP " + res.status);
+        continue;
+      }
+      return asJson ? res.json() : res.arrayBuffer();
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error("all gateways failed for " + input);
+}
+
+// ─────────────────────────────────────────────────
+// Audio engine
+// ─────────────────────────────────────────────────
+let ctx = null;
+let baseBuffer = null;
+const soundBuffers = {}; // key → AudioBuffer
+let events = [];
+let activeSources = [];
+let startedAt = 0;
+let totalDurationMs = 0;
+let rafId = null;
+
+function setStatus(text, isErr) {
+  const el = document.getElementById("status");
+  el.textContent = text;
+  el.className = isErr ? "err" : "";
+}
+
+function buildKeyDisplay(soundsMap) {
+  const keysEl = document.getElementById("keys");
+  keysEl.innerHTML = "";
+  const keys = Object.keys(soundsMap).sort();
+  for (const k of keys) {
+    const span = document.createElement("div");
+    span.className = "key";
+    span.id = "key-" + k;
+    span.textContent = k;
+    keysEl.appendChild(span);
+  }
+}
+
+function flashKey(k) {
+  const el = document.getElementById("key-" + k);
+  if (!el) return;
+  el.classList.add("flash");
+  setTimeout(() => el.classList.remove("flash"), 180);
+}
+
+async function loadAll(eventsInput, baseInput, soundsInput) {
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+  // 1. events: URL 参数 OR demo 数组
+  if (eventsInput) {
+    setStatus("Loading events...");
+    events = await fetchWithFallback(eventsInput, true);
+    if (!Array.isArray(events)) {
+      throw new Error("events JSON 不是数组");
+    }
+  } else {
+    events = DEMO_EVENTS;
+  }
+  events.sort((a, b) => a.time - b.time);
+
+  // 2. sounds map: URL 参数 OR demo 内嵌
+  let soundsMap;
+  if (soundsInput) {
+    setStatus("Loading sounds map...");
+    const raw = await fetchWithFallback(soundsInput, true);
+    // 兼容两种格式：{key: txid} 或 {key: {txId: ...}}
+    soundsMap = {};
+    for (const k of Object.keys(raw)) {
+      const v = raw[k];
+      soundsMap[k] = typeof v === "string" ? v : v.txId;
+    }
+  } else {
+    soundsMap = DEMO_SOUNDS;
+  }
+  buildKeyDisplay(soundsMap);
+
+  // 3. 加载并解码所有音效（并行）
+  setStatus("Decoding 26 sound effects...");
+  const soundEntries = Object.entries(soundsMap);
+  await Promise.all(
+    soundEntries.map(async ([k, txid]) => {
+      const buf = await fetchWithFallback("ar://" + txid, false);
+      soundBuffers[k] = await ctx.decodeAudioData(buf);
+    }),
+  );
+
+  // 4. 加载底曲
+  setStatus("Loading base track...");
+  const baseRaw = await fetchWithFallback(baseInput || DEMO_BASE, false);
+  baseBuffer = await ctx.decodeAudioData(baseRaw);
+
+  // 5. 计算总时长 = max(底曲时长, 最后一个事件时间 + 音效尾巴预留)
+  const lastEvent = events.length ? events[events.length - 1] : null;
+  const eventsEnd = lastEvent ? lastEvent.time + 1000 : 0;
+  totalDurationMs = Math.max(baseBuffer.duration * 1000, eventsEnd);
+
+  setStatus("Ready · " + events.length + " events · " +
+    Math.round(totalDurationMs / 1000) + "s");
+  document.getElementById("meta").textContent =
+    "events: " + events.length +
+    "  |  base: " + Math.round(baseBuffer.duration) + "s" +
+    "  |  sounds: " + soundEntries.length;
+  document.getElementById("playBtn").disabled = false;
+}
+
+function play() {
+  // 浏览器 autoplay policy：用户点击后 resume
+  if (ctx.state === "suspended") ctx.resume();
+
+  stopInternal();
+
+  const startTime = ctx.currentTime + 0.1; // 100ms 缓冲，避免第一个 event 卡顿
+  startedAt = startTime;
+
+  // 调度底曲
+  const baseSrc = ctx.createBufferSource();
+  baseSrc.buffer = baseBuffer;
+  baseSrc.connect(ctx.destination);
+  baseSrc.start(startTime);
+  activeSources.push(baseSrc);
+
+  // 调度每个 event
+  for (const ev of events) {
+    const buf = soundBuffers[ev.key];
+    if (!buf) continue;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(startTime + ev.time / 1000);
+    activeSources.push(src);
+  }
+
+  // UI 同步：每帧更新进度条 + 高亮当前播放的键
+  const eventQueue = events.slice();
+  let nextIdx = 0;
+  const tick = () => {
+    const elapsed = (ctx.currentTime - startTime) * 1000;
+    const pct = Math.min(100, (elapsed / totalDurationMs) * 100);
+    document.getElementById("bar").style.width = pct + "%";
+
+    while (nextIdx < eventQueue.length && eventQueue[nextIdx].time <= elapsed) {
+      flashKey(eventQueue[nextIdx].key);
+      nextIdx++;
+    }
+
+    if (elapsed < totalDurationMs) {
+      rafId = requestAnimationFrame(tick);
+    } else {
+      stopInternal();
+      document.getElementById("playBtn").classList.remove("playing");
+      document.getElementById("playBtn").textContent = "▶";
+      setStatus("Done · click ▶ to replay");
+    }
+  };
+  rafId = requestAnimationFrame(tick);
+
+  document.getElementById("playBtn").classList.add("playing");
+  document.getElementById("playBtn").textContent = "■";
+  setStatus("Playing...");
+}
+
+function stopInternal() {
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+  for (const src of activeSources) {
+    try { src.stop(); } catch (e) {}
+  }
+  activeSources = [];
+}
+
+function togglePlay() {
+  if (activeSources.length > 0) {
+    stopInternal();
+    document.getElementById("playBtn").classList.remove("playing");
+    document.getElementById("playBtn").textContent = "▶";
+    document.getElementById("bar").style.width = "0%";
+    setStatus("Stopped · click ▶ to replay");
+  } else {
+    play();
+  }
+}
+
+// ─────────────────────────────────────────────────
+// Bootstrap
+// ─────────────────────────────────────────────────
+(async function () {
+  const params = getParams();
+  document.getElementById("playBtn").addEventListener("click", togglePlay);
+  try {
+    await loadAll(params.events, params.base, params.sounds);
+  } catch (e) {
+    console.error(e);
+    setStatus("Failed: " + (e && e.message ? e.message : String(e)), true);
+  }
+})();
+</script>
+</body>
+</html>
