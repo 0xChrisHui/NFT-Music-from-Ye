@@ -32,6 +32,11 @@
 
 ## ✅ Done
 
+- **[Phase 3.1]** ✅ 完成（2026-04-12）— 稳定性修复 Sprint 1+2（7 项）：
+  - F1 原子 claim + F2 幂等写入 + F3 external_url 环境变量 + F4 底曲 fail fast
+  - F5 promise catch + F6 防御性检查 + F7 UUID 校验
+  - F8 不需要（/me = "我铸造的"）、F9 延后
+  - 来源：Codex CTO Review + Claude Code 自检 → `reviews/2026-04-12-phase-3.1-fix-plan.md`
 - **[Phase 3B]** ✅ 完成（2026-04-12）— 链上事件同步 cron：
   - `supabase/migrations/phase-3/013_system_kv.sql` — 系统 KV 表，存 last_synced_block
   - `supabase/migrations/phase-3/014_chain_events.sql` — 链上事件表，UNIQUE(tx_hash, log_index)

@@ -7,14 +7,14 @@
 ## 当前阶段
 
 **Phase**: Phase 3 — Score NFT（乐谱 NFT + 封面 + 分享）
-**进度**: **Phase 3A ✅ + Phase 3B ✅ 完成**
+**进度**: **Phase 3 全部完成**（3A ✅ + 3B ✅ + 3.1 稳定性修复 ✅）
 **playbook**: `playbook/phase-3-score-nft.md`
 
 ## 当前进度
 
-**做到哪**: Phase 3B 完成 — sync-chain-events cron + system_kv + chain_events
-**下一步**: Phase 4 规划
-**剩余**: Phase 3 全部完成
+**做到哪**: Phase 3.1 稳定性修复完成 — 原子 claim + 幂等写入 + metadata 正确性 + 代码防御
+**下一步**: Phase 4 规划（或主网部署准备）
+**剩余**: Phase 3 全部完成，Sprint 3 F9（链上灾备）延后到主网前
 
 ### 续做指南（下次会话第一件事读这段）
 
@@ -48,9 +48,16 @@
 
 **Phase 3B 产物**：
 - `system_kv` 表：存 `last_synced_block`，当前 cursor ≈ 42091300
-- `chain_events` 表：已同步 tokenId 2 的 Transfer（from 0x000...000 → operator）
-- `sync-chain-events` cron：Alchemy Free 限 10 区块/请求，代码分批循环（50 批 × 10 = 500 区块/次）
-- tokenId 1 的 Transfer 在更早区块，未被覆盖（不影响后续同步）
+- `chain_events` 表：已同步 tokenId 2 的 Transfer
+- `sync-chain-events` cron：Alchemy Free 限 10 区块/请求，分批循环（50 批 × 10 = 500 区块/次）
+
+**Phase 3.1 稳定性修复（Codex Review 驱动）**：
+- F1: 原子 claim（RPC `claim_score_queue_job` + FOR UPDATE SKIP LOCKED + CAS 推进）
+- F2: mint_events 幂等（UNIQUE score_queue_id + upsert）
+- F3: metadata external_url 用 `NEXT_PUBLIC_APP_URL` 环境变量
+- F4: 底曲缺失 fail fast（去掉 demo fallback）
+- F5-F7: promise catch + topics 防御检查 + UUID 校验
+- **延后项**：F8 不需要（/me = "我铸造的"）、F9 链上灾备延后到主网前
 
 **长期生效的决策补丁（别忘）**：
 - ARWEAVE_GATEWAYS 缩到 2 个：`arweave.net` + `ario.permagate.io`
@@ -62,9 +69,9 @@
 
 ## 上次成功验证
 
-- 验证: Phase 3B sync-chain-events — tokenId 2 Transfer 事件成功同步到 chain_events ✅
+- 验证: Phase 3.1 稳定性修复 — verify.sh 全绿 + Codex Review 7/9 修复完成 ✅
 - 时间: 2026-04-12
-- commit: 待 commit
+- commit: `962a98f`
 
 ## 当前阻塞
 

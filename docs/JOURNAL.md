@@ -74,3 +74,10 @@
   - 起因：CTO review 指出乐观更新无回滚
   - 决定：保持乐观更新（点击即红），后端失败不回退红心、不显示错误。开发者从日志排查，后端静默重试。与 A5 决策一致——用户只看到成功。
   - 影响：需要完善铸造失败监控+告警（已记入 `reviews/phase-1-deferred.md`）
+
+### 2026-04-12 — Phase 3 完成 + 稳定性修复
+
+- **Alchemy Free 10 区块限制**：sync-chain-events cron 不能用大范围 getLogs，改成分批循环（50×10=500 区块/次）。主网需要升级 Alchemy 或用其他 RPC。
+- **产品决策：/me 展示"我铸造的"而非"我持有的"**：Codex 建议接 chain_events 做 owner 投影，讨论后决定当前语义就是 minter。链上转手是极少数场景，不值得增加复杂度。
+- **metadata external_url 必须用环境变量**：Arweave metadata 一旦上传不可修改。`NEXT_PUBLIC_APP_URL` 缺失时 cron 拒绝铸造，避免永久写入错误链接。
+- **F9 链上灾备延后**：/score/[tokenId] 的 Arweave fallback 路径（DB 丢数据时从链上恢复）技术上可行但当前不紧急，延后到主网前。
