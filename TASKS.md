@@ -13,13 +13,14 @@
 
 ## ⏭ Next
 
-- **Phase 4 Step S0** — 自签 JWT 基础设施 + 双验证中间件
-- **Phase 4 Step S1** — Semi OAuth2 对接 + users 表扩展
-- **Phase 4 Step S2** — 前端登录按钮 + 个人页兼容
-- **Phase 4 Step S3** — 余额告警 cron + 健康检查增强
-- **Phase 4 Step S4** — 艺术家页面 /artist
-- **Phase 4 Step S5** — 空投系统骨架
-- **Phase 4 Step S6** — 收口验证
+- **Phase 4A S0** — 自签 JWT + jti + 黑名单
+- **Phase 4A S1** — auth_identities 表 + 双验证中间件 + 6 个 API 迁移
+- **Phase 4A S2** — Semi 登录对接 + POST /api/auth/community
+- **Phase 4A S3** — 前端登录按钮 + useAuth 兼容 + 端到端验证
+- **Phase 4B S4** — 余额告警 cron + 健康检查增强
+- **Phase 4B S5** — 艺术家页面 /artist
+- **Phase 4C S6** — AirdropNFT 合约 + 空投系统
+- **Phase 4C S7** — 收口验证（10 项）
 
 延后项清单：`reviews/phase-0-deferred.md` + `reviews/phase-1-deferred.md`
 
