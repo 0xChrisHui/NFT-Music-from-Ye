@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { OwnedNFT } from '@/src/types/tracks';
+import type { OwnedScoreNFT } from '@/src/types/jam';
 import { useAuth } from '@/src/hooks/useAuth';
 import { fetchMyNFTs } from '@/src/data/nfts-source';
 import { getDrafts, removeDraft } from '@/src/lib/draft-store';
 import { getCachedNFTs, setCachedNFTs } from '@/src/lib/nft-cache';
-import { saveScore, fetchMyScores } from '@/src/data/jam-source';
+import { saveScore, fetchMyScores, fetchMyScoreNFTs } from '@/src/data/jam-source';
 import NFTCard from '@/src/components/me/NFTCard';
+import ScoreCard from '@/src/components/me/ScoreCard';
 import DraftCard from '@/src/components/me/DraftCard';
 import EmptyState from '@/src/components/me/EmptyState';
 import { DRAFT_TTL_MS } from '@/src/lib/constants';
@@ -26,6 +28,7 @@ interface DisplayDraft {
  */
 export default function MePage() {
   const { ready, authenticated, login, getAccessToken } = useAuth();
+  const [scoreNfts, setScoreNfts] = useState<OwnedScoreNFT[]>([]);
   const [nfts, setNfts] = useState<OwnedNFT[]>(() => getCachedNFTs());
   const [drafts, setDrafts] = useState<DisplayDraft[]>(() => {
     return getDrafts().map((d, i) => ({
@@ -42,7 +45,8 @@ export default function MePage() {
     getAccessToken().then(async (token) => {
       if (!token) return;
 
-      // 并行：加载 NFT + 上传本地草稿 + 加载服务端草稿
+      // 并行：加载 ScoreNFT + MaterialNFT + 上传本地草稿 + 加载服务端草稿
+      fetchMyScoreNFTs(token).then(setScoreNfts);
       fetchMyNFTs(token).then((data) => {
         setNfts(data);
         setCachedNFTs(data);
@@ -116,14 +120,34 @@ export default function MePage() {
           </Link>
         </div>
 
-        {loaded && nfts.length === 0 && drafts.length === 0 && <EmptyState />}
+        {loaded && nfts.length === 0 && drafts.length === 0 && scoreNfts.length === 0 && <EmptyState />}
 
+        {/* 我的乐谱（ScoreNFT） */}
+        {scoreNfts.length > 0 && (
+          <section>
+            <h2 className="mb-4 text-sm font-light tracking-widest text-white/60">
+              我的乐谱
+            </h2>
+            <div className="grid gap-3">
+              {scoreNfts.map((s) => (
+                <ScoreCard key={s.tokenId} score={s} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 素材 NFT */}
         {nfts.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {nfts.map((nft) => (
-              <NFTCard key={nft.tx_hash || `pending-${nft.token_id}`} nft={nft} />
-            ))}
-          </div>
+          <section className={scoreNfts.length > 0 ? 'mt-10' : ''}>
+            <h2 className="mb-4 text-sm font-light tracking-widest text-white/60">
+              素材收藏
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {nfts.map((nft) => (
+                <NFTCard key={nft.tx_hash || `pending-${nft.token_id}`} nft={nft} />
+              ))}
+            </div>
+          </section>
         )}
 
         {drafts.length > 0 && (

@@ -7,14 +7,14 @@
 ## 当前阶段
 
 **Phase**: Phase 3 — Score NFT（乐谱 NFT + 封面 + 分享）
-**进度**: **7/8 step 完成**（S0-S6 ✅ / S7 ⏳）
+**进度**: **8/8 step 完成** — Phase 3A ✅ 完成
 **playbook**: `playbook/phase-3-score-nft.md`
 
 ## 当前进度
 
-**做到哪**: S6 完成 — `/score/[tokenId]` 公开回放页 + OG 分享卡 + 数据源
-**下一步**: **S7** — 收口验证清单 + 个人页升级
-**剩余**: S7
+**做到哪**: S7 完成 — 个人页"我的乐谱" + 8/8 端到端验证全通过
+**下一步**: Phase 3B（sync-chain-events cron）或 Phase 4 规划
+**剩余**: Phase 3A 已全部完成
 
 ### 续做指南（下次会话第一件事读这段）
 
@@ -56,7 +56,7 @@
 
 ## 上次成功验证
 
-- 验证: Phase 3 S6 — verify.sh 全绿（TypeScript + ESLint + Build）✅
+- 验证: Phase 3A 端到端 8/8 全通过 ✅
 - 时间: 2026-04-12
 - commit: 待 commit
 

@@ -5,6 +5,8 @@ import type {
   SaveScoreResponse,
   ScorePreviewResponse,
   MyScoresResponse,
+  OwnedScoreNFT,
+  MyScoreNFTsResponse,
 } from '@/src/types/jam';
 
 /**
@@ -45,6 +47,15 @@ export async function fetchMyScores(token: string): Promise<MyScoresResponse['sc
   if (!res.ok) return [];
   const data: MyScoresResponse = await res.json();
   return data.scores;
+}
+
+export async function fetchMyScoreNFTs(token: string): Promise<OwnedScoreNFT[]> {
+  const res = await fetch('/api/me/score-nfts', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return [];
+  const data: MyScoreNFTsResponse = await res.json();
+  return data.scoreNfts;
 }
 
 export async function fetchScorePreview(

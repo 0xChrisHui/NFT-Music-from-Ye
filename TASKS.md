@@ -7,13 +7,14 @@
 
 ## 🎯 Now（最多 1 件，AI 正在做的）
 
-- （空，等用户发起下一步）
+- （空，Phase 3A 已完成，等用户决定下一阶段）
 
 ---
 
 ## ⏭ Next
 
-- **Phase 3 Step S7** — 收口：个人页"我的乐谱"区域 + 8 项 e2e 验证清单 + STATUS/TASKS 标 Phase 3A 完成
+- **Phase 3B** — sync-chain-events cron + 链上事件同步（详见 playbook Phase 3B 节）
+- **Phase 4 规划** — 待定
 
 延后项清单：`reviews/phase-0-deferred.md` + `reviews/phase-1-deferred.md`
 
@@ -32,6 +33,12 @@
 
 ## ✅ Done
 
+- **[Phase 3 Step S7]** ✅ 完成（2026-04-12）— 个人页升级 + 端到端验证 8/8：
+  - `src/components/me/ScoreCard.tsx`（新建）— 乐谱 NFT 卡片（封面 + 标题 + 回放链接）
+  - `app/api/me/score-nfts/route.ts`（新建）— 返回用户已铸造的 ScoreNFT
+  - `app/me/page.tsx`（修改）— 三区排列：乐谱 → 素材 → 草稿
+  - 端到端验证：8/8 全通过（1-4 手动验证 + 5-6 S5 已实测 + 7-8 手动验证）
+  - Phase 3A 标记完成
 - **[Phase 3 Step S6]** ✅ 完成（2026-04-12）— 公开回放页 + OG 分享卡：
   - `app/score/[tokenId]/page.tsx`（Server Component，封面 + 标题 + 链上信息 + iframe 播放器）
   - `app/score/[tokenId]/ScorePlayer.tsx`（Client Component，点击展开 iframe 嵌入 Arweave Decoder）

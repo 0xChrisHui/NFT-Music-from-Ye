@@ -144,6 +144,21 @@ export interface ScoreMetadata {
   }>;
 }
 
+/** 个人页用：用户铸造的 ScoreNFT 概要 */
+export interface OwnedScoreNFT {
+  tokenId: number;
+  trackTitle: string;
+  coverUrl: string;
+  eventCount: number;
+  txHash: string;
+  mintedAt: string;
+}
+
+/** API 响应：GET /api/me/score-nfts */
+export interface MyScoreNFTsResponse {
+  scoreNfts: OwnedScoreNFT[];
+}
+
 /** API 请求体：POST /api/mint/score */
 export interface MintScoreRequest {
   pendingScoreId: string;
