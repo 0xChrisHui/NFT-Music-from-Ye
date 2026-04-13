@@ -6,10 +6,15 @@ import { AIRDROP_NFT_ADDRESS, AIRDROP_NFT_ABI } from "@/src/lib/contracts";
 /**
  * GET /api/cron/process-airdrop?secret=xxx
  * 每次处理一个 pending recipient → mint AirdropNFT → 标记 success
- * 幂等：minting 状态超时回退 + CAS 推进
+ *
+ * 幂等策略（F5 修复）：
+ *   1. CAS 抢单 pending → minting
+ *   2. 链上 mint → 立刻存 tx_hash（即使后续步骤失败也能恢复）
+ *   3. 等 receipt → 解析 tokenId → 标记 success
+ *   4. recoverStuck 先查链上 tx 状态再决定回退还是补完
  */
 
-const MINTING_TIMEOUT_MS = 5 * 60 * 1000; // 5 分钟超时
+const MINTING_TIMEOUT_MS = 5 * 60 * 1000;
 
 export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get("secret");
@@ -18,10 +23,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // 0. 回退卡住的 minting 状态
     await recoverStuck();
 
-    // 1. 找一个 ready/distributing 的轮次
     const { data: round } = await supabaseAdmin
       .from("airdrop_rounds")
       .select("id, status")
@@ -31,10 +34,9 @@ export async function GET(req: NextRequest) {
       .maybeSingle();
 
     if (!round) {
-      return NextResponse.json({ result: "idle", message: "没有待处理的空投轮次" });
+      return NextResponse.json({ result: "idle" });
     }
 
-    // 标记为 distributing
     if (round.status === "ready") {
       await supabaseAdmin
         .from("airdrop_rounds")
@@ -42,7 +44,6 @@ export async function GET(req: NextRequest) {
         .eq("id", round.id);
     }
 
-    // 2. 取一个 pending 的 recipient（CAS 抢单）
     const { data: recipient } = await supabaseAdmin
       .from("airdrop_recipients")
       .select("id, wallet_address")
@@ -53,25 +54,24 @@ export async function GET(req: NextRequest) {
       .maybeSingle();
 
     if (!recipient) {
-      // 所有 recipient 都处理完了，检查是否全部 success
       await maybeFinishRound(round.id);
       return NextResponse.json({ result: "round_check", roundId: round.id });
     }
 
-    // CAS：pending → minting
+    // CAS：pending → minting + 记录 updated_at
     const { data: claimed } = await supabaseAdmin
       .from("airdrop_recipients")
-      .update({ status: "minting" })
+      .update({ status: "minting", updated_at: new Date().toISOString() })
       .eq("id", recipient.id)
       .eq("status", "pending")
       .select("id")
       .maybeSingle();
 
     if (!claimed) {
-      return NextResponse.json({ result: "skipped", message: "被其他 worker 抢走" });
+      return NextResponse.json({ result: "skipped" });
     }
 
-    // 3. 链上 mint
+    // F5: 链上 mint
     const txHash = await publicClient.simulateContract({
       address: AIRDROP_NFT_ADDRESS,
       abi: AIRDROP_NFT_ABI,
@@ -82,25 +82,38 @@ export async function GET(req: NextRequest) {
       operatorWalletClient.writeContract(request),
     );
 
+    // F5: 立刻存 tx_hash — 即使后续崩溃也能从链上恢复
+    await supabaseAdmin
+      .from("airdrop_recipients")
+      .update({ tx_hash: txHash })
+      .eq("id", recipient.id);
+
     const receipt = await publicClient.waitForTransactionReceipt({
       hash: txHash,
     });
 
-    // 从 Transfer 事件解析 tokenId
+    // F4: 解析 tokenId + NaN 防护
+    const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
     const transferLog = receipt.logs.find(
-      (l) => l.topics[0] === "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+      (l) => l.topics[0] === transferTopic,
     );
-    const tokenId = transferLog
-      ? parseInt(transferLog.topics[3]!, 16)
+    const rawTokenId = transferLog?.topics[3]
+      ? parseInt(transferLog.topics[3], 16)
+      : null;
+    const tokenId = rawTokenId != null && !isNaN(rawTokenId)
+      ? rawTokenId
       : null;
 
-    // 4. 标记 success
+    if (tokenId === null) {
+      console.error("[process-airdrop] tokenId 解析失败:", recipient.id, txHash);
+    }
+
     await supabaseAdmin
       .from("airdrop_recipients")
       .update({
         status: "success",
-        tx_hash: txHash,
         token_id: tokenId,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", recipient.id);
 
@@ -113,7 +126,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[process-airdrop] error:", msg, err);
+    console.error("[process-airdrop] error:", msg);
     return NextResponse.json(
       { error: "处理空投失败", detail: msg },
       { status: 500 },
@@ -121,17 +134,54 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/** 回退超时的 minting 状态 */
+/**
+ * F5+F7: 恢复卡住的 minting — 先查链上 tx 状态再决定
+ * - 有 tx_hash 且链上成功 → 补完 success
+ * - 有 tx_hash 且链上失败 → 回退 pending 重试
+ * - 无 tx_hash 且超时 → 回退 pending（链上没发过）
+ */
 async function recoverStuck() {
   const cutoff = new Date(Date.now() - MINTING_TIMEOUT_MS).toISOString();
-  await supabaseAdmin
+  const { data: stuck } = await supabaseAdmin
     .from("airdrop_recipients")
-    .update({ status: "pending" })
+    .select("id, tx_hash, wallet_address")
     .eq("status", "minting")
-    .lt("created_at", cutoff);
+    .lt("updated_at", cutoff);
+
+  for (const item of stuck ?? []) {
+    if (item.tx_hash) {
+      // 有 tx_hash → 查链上状态
+      try {
+        const receipt = await publicClient.getTransactionReceipt({
+          hash: item.tx_hash as `0x${string}`,
+        });
+        if (receipt.status === "success") {
+          // 链上已成功 → 补完 DB 记录
+          const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+          const log = receipt.logs.find((l) => l.topics[0] === transferTopic);
+          const tid = log?.topics[3] ? parseInt(log.topics[3], 16) : null;
+          await supabaseAdmin
+            .from("airdrop_recipients")
+            .update({
+              status: "success",
+              token_id: tid && !isNaN(tid) ? tid : null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", item.id);
+          continue;
+        }
+      } catch {
+        // tx 未找到或 pending → 回退重试
+      }
+    }
+    // 无 tx_hash 或链上失败 → 回退 pending
+    await supabaseAdmin
+      .from("airdrop_recipients")
+      .update({ status: "pending", tx_hash: null, updated_at: new Date().toISOString() })
+      .eq("id", item.id);
+  }
 }
 
-/** 检查轮次是否全部完成 */
 async function maybeFinishRound(roundId: string) {
   const { count: remaining } = await supabaseAdmin
     .from("airdrop_recipients")

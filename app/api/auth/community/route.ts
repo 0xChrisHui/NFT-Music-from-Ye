@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getAddress } from "viem";
 import { verifySemiCode, getSemiUser } from "@/src/lib/semi-client";
 import { supabaseAdmin } from "@/src/lib/supabase";
 import { signJwt } from "@/src/lib/auth/jwt";
@@ -92,7 +93,9 @@ async function findOrCreateUser(semiUser: {
   semiUserId: string;
   evmAddress: string;
 }): Promise<{ userId: string; evmAddress: string }> {
-  const { semiUserId, evmAddress } = semiUser;
+  const semiUserId = semiUser.semiUserId;
+  // F2: 标准化地址，避免大小写不一致
+  const evmAddress = getAddress(semiUser.evmAddress);
 
   // 查是否已有同 evm_address 的用户（可能是 Privy 来的）
   const { data: sameAddr } = await supabaseAdmin
@@ -102,14 +105,13 @@ async function findOrCreateUser(semiUser: {
     .maybeSingle();
 
   if (sameAddr) {
-    // 合并：已有用户，补一条 semi 的 auth_identity
+    // F3: 合并 — upsert 防并发重复
     await supabaseAdmin
       .from("auth_identities")
-      .insert({
-        user_id: sameAddr.id,
-        provider: "semi",
-        provider_user_id: semiUserId,
-      });
+      .upsert(
+        { user_id: sameAddr.id, provider: "semi", provider_user_id: semiUserId },
+        { onConflict: "provider,provider_user_id" },
+      );
     return { userId: sameAddr.id, evmAddress: sameAddr.evm_address };
   }
 
@@ -141,14 +143,13 @@ async function findOrCreateUser(semiUser: {
     throw error;
   }
 
-  // 写 auth_identity
+  // F3: upsert 防并发重复
   await supabaseAdmin
     .from("auth_identities")
-    .insert({
-      user_id: newUser.id,
-      provider: "semi",
-      provider_user_id: semiUserId,
-    });
+    .upsert(
+      { user_id: newUser.id, provider: "semi", provider_user_id: semiUserId },
+      { onConflict: "provider,provider_user_id" },
+    );
 
   return { userId: newUser.id, evmAddress };
 }

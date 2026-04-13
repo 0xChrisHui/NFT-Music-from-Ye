@@ -103,9 +103,11 @@ export async function POST(req: NextRequest) {
  * 去重后返回唯一 wallet 列表
  */
 async function snapshotOwners(): Promise<string[]> {
+  // F8: 只统计 ScoreNFT 的 Transfer（排除 MaterialNFT 等其他合约）
+  const scoreNftAddr = process.env.NEXT_PUBLIC_SCORE_NFT_ADDRESS?.toLowerCase();
   const { data: events } = await supabaseAdmin
     .from("chain_events")
-    .select("token_id, to_addr, block_number, log_index")
+    .select("token_id, to_addr, block_number, log_index, contract")
     .eq("event_name", "Transfer")
     .order("block_number", { ascending: true })
     .order("log_index", { ascending: true });
@@ -113,6 +115,8 @@ async function snapshotOwners(): Promise<string[]> {
   // 每个 tokenId 最后一次 Transfer 的 to_addr = 当前 owner
   const ownerMap = new Map<number, string>();
   for (const e of events ?? []) {
+    // F8: 只要 ScoreNFT 合约的 Transfer
+    if (scoreNftAddr && e.contract?.toLowerCase() !== scoreNftAddr) continue;
     ownerMap.set(e.token_id, e.to_addr);
   }
 

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { PrivyClient } from "@privy-io/server-auth";
+import { getAddress } from "viem";
 import { supabaseAdmin } from "../supabase";
 import { verifyJwt } from "./jwt";
 
@@ -92,7 +93,8 @@ async function findOrCreatePrivyUser(
   const wallet = privyUser.wallet;
   if (!wallet) return null;
 
-  const evmAddress = wallet.address;
+  // F2: 标准化地址，避免大小写不一致导致合并失败
+  const evmAddress = getAddress(wallet.address);
 
   const { data: newUser, error } = await supabaseAdmin
     .from("users")
@@ -101,31 +103,50 @@ async function findOrCreatePrivyUser(
     .single();
 
   if (error) {
-    // unique 冲突 = 并发创建，重新查
     if (error.code === "23505") {
-      const { data: retry } = await supabaseAdmin
+      // F1: 冲突可能是 privy_user_id 重复 或 evm_address 被 Semi 用户占了
+      // 先按 privy_user_id 查
+      const { data: byPrivy } = await supabaseAdmin
         .from("users")
         .select("id, evm_address")
         .eq("privy_user_id", privyUserId)
         .maybeSingle();
-      if (retry) {
+      if (byPrivy) {
         await supabaseAdmin
           .from("auth_identities")
           .upsert(
-            { user_id: retry.id, provider: "privy", provider_user_id: privyUserId },
+            { user_id: byPrivy.id, provider: "privy", provider_user_id: privyUserId },
             { onConflict: "provider,provider_user_id" },
           );
-        return { userId: retry.id, evmAddress: retry.evm_address };
+        return { userId: byPrivy.id, evmAddress: byPrivy.evm_address };
+      }
+      // 再按 evm_address 查（Semi 用户已存在同地址）→ 合并
+      const { data: byAddr } = await supabaseAdmin
+        .from("users")
+        .select("id, evm_address")
+        .eq("evm_address", evmAddress)
+        .maybeSingle();
+      if (byAddr) {
+        await supabaseAdmin
+          .from("auth_identities")
+          .upsert(
+            { user_id: byAddr.id, provider: "privy", provider_user_id: privyUserId },
+            { onConflict: "provider,provider_user_id" },
+          );
+        return { userId: byAddr.id, evmAddress: byAddr.evm_address };
       }
     }
     console.error("创建 Privy 用户失败:", error);
     return null;
   }
 
-  // 写 auth_identities
+  // F3: 写 auth_identities（upsert 防并发重复）
   await supabaseAdmin
     .from("auth_identities")
-    .insert({ user_id: newUser.id, provider: "privy", provider_user_id: privyUserId });
+    .upsert(
+      { user_id: newUser.id, provider: "privy", provider_user_id: privyUserId },
+      { onConflict: "provider,provider_user_id" },
+    );
 
   return { userId: newUser.id, evmAddress };
 }
