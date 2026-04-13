@@ -7,14 +7,14 @@
 ## 当前阶段
 
 **Phase**: Phase 4 — 社区钱包 + 空投
-**进度**: **5/7 step 完成**（S0-S2+S4-S5 ✅ / S3 挂起 / S6-S7 ⏳）
+**进度**: **6/7 step 完成**（S0-S2+S4-S6 ✅ / S3 挂起 / S7 ⏳）
 **playbook**: `playbook/phase-4-community.md`
 
 ## 当前进度
 
-**做到哪**: Phase 4 S5 完成 — 艺术家页面 /artist
-**下一步**: **S6** — AirdropNFT 合约 + 空投系统
-**剩余**: S6 → S7 → S3(挂起)
+**做到哪**: Phase 4 S6 完成 — AirdropNFT 合约 + 空投系统
+**下一步**: **S7** — 收口验证（10 项清单）
+**剩余**: S7 → S3(挂起)
 
 ### 续做指南（下次会话第一件事读这段）
 
@@ -81,7 +81,7 @@
 
 ## 上次成功验证
 
-- 验证: Phase 4 S5 艺术家页面 — verify.sh 全绿 ✅
+- 验证: Phase 4 S6 空投系统 — verify.sh 全绿 + forge test 6/6 ✅
 - 时间: 2026-04-13
 - commit: （待 commit）
 

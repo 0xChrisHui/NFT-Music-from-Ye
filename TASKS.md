@@ -7,13 +7,12 @@
 
 ## 🎯 Now（最多 1 件，AI 正在做的）
 
-- （空，等用户发起 Phase 4 S6）
+- （空，等用户发起 Phase 4 S7）
 
 ---
 
 ## ⏭ Next
 
-- **Phase 4C S6** — AirdropNFT 合约 + 空投系统
 - **Phase 4C S7** — 收口验证（10 项）
 
 延后项清单：`reviews/phase-0-deferred.md` + `reviews/phase-1-deferred.md`
@@ -37,6 +36,15 @@
 
 ## ✅ Done
 
+- **[Phase 4C S6]** ✅ 完成（2026-04-13）— AirdropNFT + 空投系统：
+  - `contracts/src/AirdropNFT.sol`（ERC-721，独立部署，symbol RIPA）
+  - `contracts/test/AirdropNFT.t.sol`（6/6 测试通过）
+  - `supabase/migrations/phase-4/018_airdrop_rounds.sql` + `019_airdrop_recipients.sql`
+  - `src/types/airdrop.ts`（类型定义）
+  - `src/lib/contracts.ts`（新增 AIRDROP_NFT ABI）
+  - `app/api/airdrop/trigger/route.ts`（管理员触发 + chain_events owner 快照）
+  - `app/api/cron/process-airdrop/route.ts`（逐个铸造 + 幂等 + 超时回退）
+  - verify.sh 全绿
 - **[Phase 4B S5]** ✅ 完成（2026-04-13）— 艺术家页面：
   - `app/artist/page.tsx`（Server Component，统计 + 108 首进度条 + 空投标记点）
   - `app/api/artist/stats/route.ts`（公开统计 API）

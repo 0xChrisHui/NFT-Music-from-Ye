@@ -2,6 +2,7 @@
  * 合约地址 + 最小 ABI 子集
  * - Phase 0/1：MaterialNFT (ERC-1155)
  * - Phase 3 S2：ScoreNFT (ERC-721)
+ * - Phase 4 S6：AirdropNFT (ERC-721)
  */
 
 export const MATERIAL_NFT_ADDRESS = process.env
@@ -134,5 +135,33 @@ export const ORCHESTRATOR_ABI = [
       { indexed: true, name: 'to', type: 'address' },
       { indexed: true, name: 'tokenId', type: 'uint256' },
     ],
+  },
+] as const;
+
+// ─────────────────────────────────────────────────
+// AirdropNFT (Phase 4 S6) — 空投奖励 NFT
+// 独立合约，不走 Orchestrator
+// ─────────────────────────────────────────────────
+
+export const AIRDROP_NFT_ADDRESS = process.env
+  .NEXT_PUBLIC_AIRDROP_NFT_ADDRESS as `0x${string}`;
+
+export const AIRDROP_NFT_ABI = [
+  {
+    name: 'mint',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'to', type: 'address' }],
+    outputs: [{ name: 'tokenId', type: 'uint256' }],
+  },
+  {
+    name: 'setTokenURI',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'uri', type: 'string' },
+    ],
+    outputs: [],
   },
 ] as const;
