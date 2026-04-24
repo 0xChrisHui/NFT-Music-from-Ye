@@ -38,7 +38,12 @@ let ratelimit: Ratelimit | null = null;
 try {
   const url = process.env.UPSTASH_REDIS_REST_URL?.replace(/^["']+|["']+$/g, "").trim();
   const token = process.env.UPSTASH_REDIS_REST_TOKEN?.replace(/^["']+|["']+$/g, "").trim();
-  if (url && token) {
+  if (!url || !token) {
+    // 启动期观测：env vars 缺失
+    console.warn(
+      "[middleware] UPSTASH_REDIS_REST_URL / _TOKEN 未配置，限流已禁用（fail-open）",
+    );
+  } else {
     const redis = new Redis({ url, token });
     ratelimit = new Ratelimit({
       redis,
@@ -47,9 +52,12 @@ try {
       analytics: true,
     });
   }
-} catch {
+} catch (err) {
   // 初始化失败 → fail open，不阻塞
-  console.error("[middleware] Upstash 初始化失败，限流已禁用");
+  console.error(
+    "[middleware] Upstash 初始化失败，限流已禁用:",
+    err instanceof Error ? err.message : err,
+  );
 }
 
 export async function middleware(req: NextRequest) {
@@ -90,8 +98,12 @@ export async function middleware(req: NextRequest) {
     res.headers.set("X-RateLimit-Limit", limit.toString());
     res.headers.set("X-RateLimit-Remaining", remaining.toString());
     return res;
-  } catch {
-    // Upstash 宕机 → fail open
+  } catch (err) {
+    // Upstash 调用失败 → fail open，但留日志供诊断
+    console.error(
+      "[middleware] 限流调用失败:",
+      err instanceof Error ? err.message : err,
+    );
     return NextResponse.next();
   }
 }

@@ -76,8 +76,16 @@ async function tryConfirmMinting() {
   if (!item.tx_hash) {
     const age = Date.now() - new Date(item.updated_at).getTime();
     if (age > STUCK_TIMEOUT_MS) {
-      await resetToPending(item.id);
-      return { result: "recovered", recipientId: item.id };
+      // 不能安全 reset — 可能链上已发但 DB 没记 hash，reset 会重复空投
+      console.error(
+        `[process-airdrop] CRITICAL: recipient ${item.id} 卡在 minting 无 tx_hash 已 ${age}ms — 链上状态未知，标记 failed 等人工核查 operator tx 历史`,
+      );
+      await supabaseAdmin
+        .from("airdrop_recipients")
+        .update({ status: "failed", updated_at: new Date().toISOString() })
+        .eq("id", item.id)
+        .eq("status", "minting");
+      return { result: "stuck_needs_review", recipientId: item.id };
     }
     return null;
   }
@@ -88,6 +96,7 @@ async function tryConfirmMinting() {
     });
     if (receipt.status === "success") {
       const tokenId = parseTokenId(receipt.logs);
+      // CAS 防并发重复标 success
       await supabaseAdmin
         .from("airdrop_recipients")
         .update({
@@ -95,9 +104,11 @@ async function tryConfirmMinting() {
           token_id: tokenId,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", item.id);
+        .eq("id", item.id)
+        .eq("status", "minting");
       return { result: "confirmed", recipientId: item.id, txHash: item.tx_hash, tokenId };
     }
+    // 链上 revert → 安全回退重试（tx 已结束）
     await resetToPending(item.id);
     return { result: "chain_failed", recipientId: item.id };
   } catch {
@@ -129,27 +140,35 @@ async function trySendNew(roundId: string) {
 
   if (!claimed) return null;
 
+  // 严格区分：链上 send 失败（安全 reset）vs DB 写 tx_hash 失败（不能 reset 会重复空投）
+  let txHash: `0x${string}`;
   try {
-    const txHash = await publicClient.simulateContract({
+    txHash = await operatorWalletClient.writeContract({
       address: AIRDROP_NFT_ADDRESS,
       abi: AIRDROP_NFT_ABI,
       functionName: "mint",
       args: [recipient.wallet_address as `0x${string}`],
-      account: operatorWalletClient.account,
-    }).then(({ request }) => operatorWalletClient.writeContract(request));
-
-    // 立刻存 tx_hash — 不等确认
-    await supabaseAdmin
-      .from("airdrop_recipients")
-      .update({ tx_hash: txHash, updated_at: new Date().toISOString() })
-      .eq("id", recipient.id);
-
-    return { result: "sent", recipientId: recipient.id, txHash };
+    });
   } catch (err) {
-    console.error("[process-airdrop] send failed:", err);
+    console.error("[process-airdrop] chain send failed:", err);
     await resetToPending(recipient.id);
     return { result: "send_failed", recipientId: recipient.id };
   }
+
+  // tx 已广播 — 下面任何失败都不能 reset（否则重复空投）
+  const { error: dbErr } = await supabaseAdmin
+    .from("airdrop_recipients")
+    .update({ tx_hash: txHash, updated_at: new Date().toISOString() })
+    .eq("id", recipient.id);
+
+  if (dbErr) {
+    console.error(
+      `[process-airdrop] CRITICAL: tx ${txHash} 已上链但 DB 写 tx_hash 失败 recipient=${recipient.id}: ${dbErr.message}. 人工核查: UPDATE airdrop_recipients SET tx_hash='${txHash}' WHERE id='${recipient.id}'`,
+    );
+    return { result: "db_write_failed", recipientId: recipient.id, txHash };
+  }
+
+  return { result: "sent", recipientId: recipient.id, txHash };
 }
 
 function parseTokenId(logs: readonly { topics: readonly `0x${string}`[] }[]): number | null {

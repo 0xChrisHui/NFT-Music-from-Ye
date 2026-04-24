@@ -7,19 +7,26 @@
 
 ## 🎯 Now（最多 1 件，AI 正在做的）
 
-- **Phase 5 S0** — Cron 鉴权迁移（query param → Authorization header）
+- （空，等用户 review Phase 5 收口 + 发起 tester 前必修 bug 修复）
 
 ---
 
-## ⏭ Next
+## ⏭ Next — Phase 5.5 Tester 前必修（3 个 bug）
 
-- **Phase 5 S1** — Cron 拆步（mint-queue + airdrop 两步化）
-- **Phase 5 S2** — Turbo 钱包环境变量化
-- **Phase 5 S3** — 公开 ping + Rate Limiting + 错误页面
-- **Phase 5 S4** — 域名 + Vercel 部署 + cron-job.org
-- **Phase 5 S5** — 冒烟测试 + 收口
+详细 bug 背景：`reviews/2026-04-24-phase-5-s5-smoke-test.md`
 
-延后项清单：`reviews/phase-0-deferred.md` + `reviews/phase-1-deferred.md`
+- **Bug #3** — operator 钱包 faucet 补到 0.1+ ETH（OP Sepolia，15 分钟，用户操作）
+- **Bug #6** — Rate limit 线上失效（查 Vercel 上 Upstash 两个环境变量值，30 分钟）
+- **Bug #2** — 点击钱包地址 → 直接登出（改 LoginButton 组件，30-60 分钟）
+
+**全修完 → 上 10-20 人 tester 反馈轮**（1-2 周收集反馈作为 Phase 6 输入）
+
+## ⏭⏭ 之后
+
+- **Phase 6** — UI 重设计（基于 tester 反馈 + 顺带修 bug #1 音频叠加 + bug #5 草稿铸造按钮）
+- **Phase 7** — OP 主网
+
+延后项清单：`reviews/phase-0-deferred.md` + `reviews/phase-1-deferred.md` + `reviews/2026-04-24-phase-5-s5-smoke-test.md`
 
 **主网前必做**：
 - Deploy 脚本 admin/minter 分离 + save draft 事务化（见 `reviews/2026-04-10-phase-2.5-completion-review.md`）
@@ -40,6 +47,22 @@
 
 ## ✅ Done
 
+- **[Phase 5 S5]** ✅ 完成（2026-04-24）— 冒烟测试 10/12：
+  - 12 项清单：基础可达 A1-A4 全绿 / 核心业务 B5-B8+B10 全绿（B9 乐谱铸造 UI 按钮未实现，延后 Phase 6）/ 安全 C11 全绿（C12 rate limit 失效，bug #6 待修）
+  - 详细 review：`reviews/2026-04-24-phase-5-s5-smoke-test.md`
+  - 6 个 bug 已分类：3 个测试前必修（#2 #3 #6）+ 2 个 Phase 6 一起做（#1 #5）+ 1 个忽略（#4）
+- **[Phase 5 S4]** ✅ 完成（2026-04-15 → 2026-04-24）— 域名 + Vercel + cron-job.org：
+  - 域名 `pond-ripple.xyz` 已绑（Vercel 代管）
+  - Vercel 部署 `4d35e80` + `daf73c1`（middleware Upstash 初始化容错修复）
+  - cron-job.org 5 个 job 运行中：process-mint-queue / process-score-queue（1min）/ process-airdrop（2min）/ sync-chain-events（5min）/ check-balance（1hour）
+  - 5/5 cron 绿灯（process-score-queue 曾 308 被用户发现并自行修正 URL）
+  - 环境变量全量迁移到 Vercel（含 TURBO_WALLET_JWK / UPSTASH_*）
+- **[Phase 5 S0-S3]** ✅ 完成（2026-04-15）— 代码准备（commit `4d35e80`）：
+  - S0 Cron 鉴权迁移（query param → Authorization header，`src/lib/auth/cron-auth.ts` 新建 + 6 个 cron 路由迁移）
+  - S1 Cron 拆步（process-mint-queue + process-airdrop 两步状态机，每步 < 5 秒）
+  - S2 Turbo 钱包环境变量化（TURBO_WALLET_PATH → TURBO_WALLET_JWK，修 `src/lib/arweave/core.ts`）
+  - S3 公开 ping + Upstash rate limit + 404/error 页（`app/api/ping/route.ts` + `middleware.ts` + `app/not-found.tsx` + `app/error.tsx`）
+  - src/lib 目录重组：contracts.ts / operator-wallet.ts → chain/ 子目录，privy.ts / semi-client.ts → auth/ 子目录
 - **[Phase 4C S6]** ✅ 完成（2026-04-13）— AirdropNFT + 空投系统：
   - `contracts/src/AirdropNFT.sol`（ERC-721，独立部署，symbol RIPA）
   - `contracts/test/AirdropNFT.t.sol`（6/6 测试通过）

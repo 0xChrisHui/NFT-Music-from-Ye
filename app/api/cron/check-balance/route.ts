@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyCronSecret } from "@/src/lib/auth/cron-auth";
 import { supabaseAdmin } from "@/src/lib/supabase";
 import { publicClient } from "@/src/lib/chain/operator-wallet";
+import { SCORE_ACTIVE_STATUSES } from "@/src/types/jam";
 import { formatEther } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -50,16 +51,11 @@ export async function GET(req: NextRequest) {
       alerts.push(msg);
     }
 
-    // 3. 检查 score_nft_queue 积压
+    // 3. 检查 score_nft_queue 积压（用枚举常量，避免拼错状态名）
     const { count: scoreBacklog } = await supabaseAdmin
       .from("score_nft_queue")
       .select("id", { count: "exact", head: true })
-      .in("status", [
-        "pending",
-        "uploading_sounds",
-        "uploading_metadata",
-        "minting_onchain",
-      ]);
+      .in("status", SCORE_ACTIVE_STATUSES);
 
     if ((scoreBacklog ?? 0) > QUEUE_BACKLOG_LIMIT) {
       const msg = `score_nft_queue 积压: ${scoreBacklog} 件 (阈值 ${QUEUE_BACKLOG_LIMIT})`;

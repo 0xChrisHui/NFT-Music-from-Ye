@@ -98,15 +98,23 @@ export interface MyScoresResponse {
 // Phase 3 S5 — ScoreNFT 铸造队列 + metadata
 // ─────────────────────────────────────────────────
 
-/** score_nft_queue 5 步状态机 */
-export type ScoreMintStatus =
-  | 'pending'
-  | 'uploading_events'
-  | 'minting_onchain'
-  | 'uploading_metadata'
-  | 'setting_uri'
-  | 'success'
-  | 'failed';
+/** score_nft_queue 5 步状态机 — 单一来源，运维 + 类型都从这里读 */
+export const SCORE_STATUSES = [
+  'pending',
+  'uploading_events',
+  'minting_onchain',
+  'uploading_metadata',
+  'setting_uri',
+  'success',
+  'failed',
+] as const;
+
+export type ScoreMintStatus = (typeof SCORE_STATUSES)[number];
+
+/** 非终态：用于监控积压 */
+export const SCORE_ACTIVE_STATUSES = SCORE_STATUSES.filter(
+  (s) => s !== 'success' && s !== 'failed',
+);
 
 /** score_nft_queue 表的一行 */
 export interface ScoreMintQueueRow {

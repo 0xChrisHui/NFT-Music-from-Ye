@@ -6,15 +6,24 @@
 
 ## 当前阶段
 
-**Phase**: Phase 5 — 测试网公开版（Privy-only，Semi 继续挂起）
-**进度**: **S0 开始**
+**Phase**: Phase 5 — 测试网公开版 ✅ S0-S5 完成（10/12 冒烟测试通过）
+**进度**: **S0-S5 完成**，等测试前必修 3 项（bug #2/#3/#6）完成后上 tester
 **playbook**: `playbook/phase-5-testnet-public.md`
 
 ## 当前进度
 
-**做到哪**: Phase 5 S3 完成（Cron 鉴权 + 拆步 + Turbo + ping/限流/错误页）
-**下一步**: S0 → S1（Cron 拆步）→ S2（Turbo 环境变量化）→ S3（ping + 限流 + 错误页）→ S4（部署）→ S5（冒烟测试）
-**剩余**: Phase 5 → 6（UI 重设计）→ 7（OP 主网）
+**做到哪**: Phase 5 整条链路已部署上线，域名 `https://pond-ripple.xyz` 可访问，5 个 cron job 运行中，12 项冒烟测试 10 项通过
+**下一步**: 修 3 个测试前必修 bug（#2 钱包地址登出 / #3 operator 余额过低 / #6 rate limit 失效）→ 10-20 人 tester 反馈轮 → Phase 6 UI 重设计 → Phase 7 OP 主网
+**剩余**: Phase 5.5（tester 反馈轮）→ Phase 6（UI 重设计）→ Phase 7（OP 主网）
+
+### Phase 5 交付物（2026-04-24 收口）
+
+- 域名：`pond-ripple.xyz`（Vercel 代管）
+- 部署：Vercel Hobby（免费）+ cron-job.org（免费外部触发，5 个 job）
+- API：/api/ping 公开 / /api/health 鉴权 / 404 + error 页 / cron 鉴权迁移到 Authorization header
+- Arweave：Turbo 钱包环境变量化（TURBO_WALLET_JWK）
+- 限流：middleware + Upstash Redis（**代码就绪但线上未生效，bug #6 待修**）
+- 冒烟测试文档：`reviews/2026-04-24-phase-5-s5-smoke-test.md`
 
 ### 续做指南（下次会话第一件事读这段）
 
@@ -88,13 +97,14 @@
 
 ## 上次成功验证
 
-- 验证: Phase 4 S6 空投系统 — verify.sh 全绿 + forge test 6/6 ✅
-- 时间: 2026-04-13
-- commit: （待 commit）
+- 验证: Phase 5 S5 冒烟测试 10/12 通过（线上 https://pond-ripple.xyz）
+- 时间: 2026-04-24
+- commit: `daf73c1`（Phase 5 代码已全部推送线上）
+- 详情: `reviews/2026-04-24-phase-5-s5-smoke-test.md`
 
 ## 当前阻塞
 
-- 无
+- 无（Phase 4A S3 Semi 前端挂起不算阻塞，Phase 5 走 Privy-only 已绕过）
 
 ## 备注
 
