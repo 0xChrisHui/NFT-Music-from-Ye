@@ -7,21 +7,26 @@
 
 ## 🎯 Now（最多 1 件，AI 正在做的）
 
-- （空，等用户 review Phase 5 收口 + 发起 tester 前必修 bug 修复）
+- （空，Phase 5 已收口，等用户发起 tester 邀请或 Phase 6 启动）
 
 ---
 
-## ⏭ Next — Phase 5.5 Tester 前必修（只剩 1 件用户操作）
+## ⏭ Next — Phase 5.5 Tester 反馈轮（用户主导）
 
-详细 bug 背景：`reviews/2026-04-24-phase-5-s5-smoke-test.md` + `reviews/2026-04-25-phase-5-strict-cto-review.md`
+代码侧完全就绪，接下来由用户操作：
 
-- **Bug #3** — operator 钱包 faucet 补到 0.1+ ETH（OP Sepolia，15 分钟，用户操作）
+- 准备 tester 邀请文案（建议说明：测试网、未实装的功能清单、已知 bug 清单、反馈提交方式）
+- 决定反馈渠道（微信群 / 飞书文档 / GitHub Issues 任选）
+- 从小范围开始放人（5 人 → 观察 1-2 天 → 再 +5-10 人）
+- 收集反馈 1-2 周 → 输入 Phase 6 UI 重设计
 
-**已清（第一轮 commit `1bb1b05`）**：bug #2 LoginButton / bug #6 Rate limit 误判 / Codex ➊➋➌ post-send rollback / 并发 CAS / middleware 观测 / check-balance 状态枚举
-
-**已清（第二轮 Codex 严格 review，本次 commit）**：bug #7 material mint 并发重复入队（稳定 idempotencyKey）/ bug #8 爱心 UI 悲观回退
-
-**Bug #3 解除 → 开放限定范围 tester**（素材收藏 + 个人页 + artist；不含草稿铸造 / 空投）
+**已清的 bug**（commit 历史见 git log）：
+- Bug #2 LoginButton 点地址登出 ✅
+- Bug #3 operator 钱包余额 ✅（用户加 0.01 ETH，OP Sepolia gas 极便宜足够 10-20 人轮）
+- Bug #6 rate limit 误判 ✅（实际正常工作）
+- Bug #7 material mint 并发重复入队 ✅
+- Bug #8 爱心 UI 悲观回退 ✅
+- Codex 第一轮 P0：post-send rollback × 2 / markSuccess 改序 / 并发 CAS / check-balance 状态枚举 / middleware 观测 ✅
 
 ---
 
@@ -66,6 +71,13 @@
 
 ## ✅ Done
 
+- **[Phase 5 收口]** ✅ 完成（2026-04-25）— 测试网公开版部署 + 两轮 review 修复：
+  - commits: `1bb1b05`（第一轮 review P0 修复）/ `ddda82c`（bug #6 文档修订）/ `1019dcb`（严格 CTO review 修复）
+  - 线上地址：`https://pond-ripple.xyz`（Vercel Hobby + cron-job.org 5 个 job）
+  - 代码侧所有 tester 前 blocker 已修（11 项 bug）
+  - 三份 review：`reviews/2026-04-24-phase-5-s5-smoke-test.md` + `reviews/2026-04-24-phase-5-completion-review.md` + `reviews/2026-04-25-phase-5-strict-cto-review.md`
+  - 决策日志：`docs/JOURNAL.md` 2026-04-25 段落
+  - 限定 tester 范围：素材收藏 + 个人页 + artist + 已铸造乐谱回放（不含草稿铸造 + 空投）
 - **[Phase 5 S5]** ✅ 完成（2026-04-24）— 冒烟测试 10/12：
   - 12 项清单：基础可达 A1-A4 全绿 / 核心业务 B5-B8+B10 全绿（B9 乐谱铸造 UI 按钮未实现，延后 Phase 6）/ 安全 C11 全绿（C12 rate limit 失效，bug #6 待修）
   - 详细 review：`reviews/2026-04-24-phase-5-s5-smoke-test.md`

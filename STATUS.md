@@ -6,16 +6,17 @@
 
 ## 当前阶段
 
-**Phase**: Phase 5 — 测试网部署完成（未达 playbook 12/12 完整收口，B9 乐谱铸造延后 Phase 6）
-**进度**: 部署上线 + Review 修复完成，剩 1 件用户操作（bug #3 faucet）即可开放限定范围 tester
+**Phase**: Phase 5 — 测试网公开版 **✅ 已收口**（2026-04-25）
+**进度**: 代码侧 + 文档全部完成，operator 钱包余额已补（用户加 0.01 ETH）
 **playbook**: `playbook/phase-5-testnet-public.md`
-**tester 范围**：仅素材收藏链路 + 个人页 + artist 页；**不含草稿铸造（bug #5）+ 空投**
+**决策日志**：`docs/JOURNAL.md` 2026-04-25 段落
+**tester 范围**：素材收藏 + 个人页 + artist 页 + 已铸造乐谱回放；**不含草稿铸造**（bug #5，挂 Phase 6）**不含空投**
 
 ## 当前进度
 
-**做到哪**: Phase 5 线上 + 两轮 Review 合计 11 项代码修复完成（含第二轮严格 CTO review 的 P0 material 并发 + UI 回退）
-**下一步**: bug #3 operator 钱包 faucet → 限定范围 tester 反馈轮 → Phase 6 UI 重设计前先修 ScoreNFT cron P0 四连 → Phase 7 OP 主网
-**剩余**: Phase 5.5（tester 反馈轮）→ Phase 6（UI 重设计 + ScoreNFT cron 修复）→ Phase 7（OP 主网）
+**做到哪**: Phase 5 完全收口 — 部署 + 3 commit 修完所有 P0（`1bb1b05` / `ddda82c` / `1019dcb`）
+**下一步**: 用户准备 tester 邀请文案 + 反馈渠道 → 开放限定范围 tester 1-2 周收反馈 → Phase 6 UI 重设计（先修 ScoreNFT cron P0 四连，再做 UI + 接通草稿铸造）→ Phase 7 OP 主网
+**剩余**: Phase 5.5（tester 反馈轮，用户主导）→ Phase 6（UI 重设计 + ScoreNFT cron 修复）→ Phase 7（OP 主网）
 
 ### Phase 5 交付物（2026-04-25 收口）
 
@@ -102,14 +103,15 @@
 
 ## 上次成功验证
 
-- 验证: Phase 5 S5 冒烟测试 10/12 通过（线上 https://pond-ripple.xyz）
-- 时间: 2026-04-24
-- commit: `daf73c1`（Phase 5 代码已全部推送线上）
-- 详情: `reviews/2026-04-24-phase-5-s5-smoke-test.md`
+- 验证: Phase 5 收口 — 代码侧所有 tester 前必修 bug 已修 + 部署
+- 时间: 2026-04-25
+- commits: `1bb1b05`（第一轮 review 修复）→ `ddda82c`（bug #6 文档修订）→ `1019dcb`（第二轮严格 review 修复）
+- 详情: `reviews/2026-04-24-phase-5-s5-smoke-test.md` + `reviews/2026-04-24-phase-5-completion-review.md` + `reviews/2026-04-25-phase-5-strict-cto-review.md`
 
 ## 当前阻塞
 
 - 无（Phase 4A S3 Semi 前端挂起不算阻塞，Phase 5 走 Privy-only 已绕过）
+- tester 邀请文案 + 反馈收集渠道（微信群 / 表单）由用户主导准备，不算代码阻塞
 
 ## 备注
 

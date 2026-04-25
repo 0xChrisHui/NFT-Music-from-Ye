@@ -91,3 +91,31 @@
   - 已做完的部分 100% 可复用：JWT 基础设施 / 双验证中间件 / auth_identities / 6 个 API 迁移 / community 登录端点
 - **认证底座是通用的，不绑定 Semi**
   - S0-S1 的 JWT + 双验证中间件 + auth_identities 表适用于任何第三方登录源（微信 / Google / 任何 OAuth），Semi 只是第一个接入方
+
+### 2026-04-25 — Phase 5 收口
+
+- **推翻原 Phase 5 = 主网部署，拆成 Phase 5/6/7**
+  - 起因：产品上主网前需要先给小范围用户试玩收反馈 + UI 还没重设计
+  - 决定：Phase 5 = 测试网公开版（OP Sepolia 继续），Phase 6 = 基于反馈做 UI 重设计，Phase 7 = OP 主网
+  - 影响：Phase 5 保留测试网合约，聚焦部署 + 安全基础；commit `b8f8c78`
+- **Vercel Hobby + cron-job.org 替代 Vercel Pro**
+  - 起因：Pro $20/月的核心价值是原生分钟级 cron + 60s 超时；测试网阶段没必要
+  - 决定：Hobby + cron 拆步（每步 <5s）+ 外部 cron-job.org 每分钟触发
+  - 影响：月成本 $0 vs $20；upstream：未来升主网时再评估是否升 Pro
+- **tester 范围限定在素材收藏链路，草稿铸造挂到 Phase 6**
+  - 起因：草稿铸造 UI 按钮从 Phase 3 就没做完（bug #5），且第二轮严格 review 发现 ScoreNFT cron 还有 4 个 P0
+  - 决定：不在 Phase 5 临时加按钮；Phase 6 开始前先修 cron 四连，再在 UI 重设计里接通草稿铸造入口
+  - 影响：tester 看到的草稿是"只能保存不能铸造"，邀请文案需要明确说明
+- **Bug #6 rate limit 失效是误判 — 测试方法论教训**
+  - 起因：第一轮 smoke test 发 25 个 curl 都没 429，以为 Upstash 静默 fail-open
+  - 真相：Vercel sin1 + Upstash us-east 跨洋 235ms/req，curl 变成 1.6s/发，25 个发成 49s → 永远不到 20/10s 阈值
+  - 后续测试方式：必须用真正并发（`&` 后台并行）而非顺序循环
+  - 影响：`reviews/2026-04-24-phase-5-s5-smoke-test.md` 标为误判，middleware 加的观测日志作为预防性改进保留
+- **cron post-send rollback 是 2026-04 最严重的事务性坑**
+  - 起因：`writeContract` 成功后 DB 写 tx_hash 失败 → catch resetToPending → 下次 cron 重发 tx → 重复 mint
+  - 决定：所有 cron 改写成"链上成功后 DB 失败不得 reset，标 failed 等人工核查 operator tx 历史"
+  - 影响：material / airdrop 已改（commit `1bb1b05`）；score-queue 同样问题延后 Phase 6 前修复（第二轮 review 发现）
+- **Phase 5 = 部署完成，非 12/12 完整收口**
+  - STATUS 里写"S0-S5 完成"容易误导——playbook 要求 12 项冒烟全通，实际只 10/12（B9 草稿铸造 + C12 限流 C12 都有例外）
+  - 决定：STATUS 改为"部署完成，开放限定范围 tester"
+  - 影响：以后继任者读文档不会以为 Phase 5 无条件完成
