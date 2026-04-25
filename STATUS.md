@@ -6,17 +6,20 @@
 
 ## 当前阶段
 
-**Phase**: Phase 5 — 测试网公开版 **✅ 已收口**（2026-04-25）
-**进度**: 代码侧 + 文档全部完成，operator 钱包余额已补（用户加 0.01 ETH）
-**playbook**: `playbook/phase-5-testnet-public.md`
-**决策日志**：`docs/JOURNAL.md` 2026-04-25 段落
-**tester 范围**：素材收藏 + 个人页 + artist 页 + 已铸造乐谱回放；**不含草稿铸造**（bug #5，挂 Phase 6）**不含空投**
+**Phase**: Phase 6 — 稳定性收口 + UI 重设计（playbook 就绪，开工中）
+**进度**: playbook 已写完（5 tracks + overview），待开始 Pre-tester gate 的 3 项
+**playbook**: `playbook/phase-6/overview.md`（+ 5 个 track 子文档）
+**决策日志**：`docs/JOURNAL.md` 2026-04-25 段落（Phase 5 收口）+ 本轮 Phase 6 kickoff 条目
+**tester 范围**（Phase 5 定）：素材收藏 + 个人页 + artist 页 + 已铸造乐谱回放；**不含草稿铸造**（bug #5，Phase 6 Track B3）**不含空投**（Phase 6 Track D1 决策）
 
 ## 当前进度
 
-**做到哪**: Phase 5 完全收口 — 部署 + 3 commit 修完所有 P0（`1bb1b05` / `ddda82c` / `1019dcb`）
-**下一步**: 用户准备 tester 邀请文案 + 反馈渠道 → 开放限定范围 tester 1-2 周收反馈 → Phase 6 UI 重设计（先修 ScoreNFT cron P0 四连，再做 UI + 接通草稿铸造）→ Phase 7 OP 主网
-**剩余**: Phase 5.5（tester 反馈轮，用户主导）→ Phase 6（UI 重设计 + ScoreNFT cron 修复）→ Phase 7（OP 主网）
+**做到哪**: Phase 5 完全收口（`b0474f1`）+ Phase 6 playbook 就绪（5 track / 26 step / 覆盖 29 个 findings）
+**下一步**:
+  1. **Pre-tester gate** — 修 A2（material failed 重试）+ B1（NFT cache 用户隔离）+ E1（material health 视图）→ 部署 → 限定范围 tester 放人
+  2. **并行开工** — 5 tracks 各自推进（B2 UI 重设计等 tester 反馈 1-2 周后再开工）
+  3. **Phase 6 完结** — 5 tracks 全绿 + completion review → Phase 7 OP 主网
+**剩余**: Phase 6（5-6 周）→ Phase 7（OP 主网 + 监控 + 退出准备）
 
 ### Phase 5 交付物（2026-04-25 收口）
 
@@ -30,6 +33,7 @@
 - 冒烟测试文档：`reviews/2026-04-24-phase-5-s5-smoke-test.md`（bug #6 部分已修订为误判）
 - 完成 review：`reviews/2026-04-24-phase-5-completion-review.md`（Codex 出）
 - 严格 CTO review：`reviews/2026-04-25-phase-5-strict-cto-review.md`（Codex 第二轮，含 Phase 6 前置 bug 清单）
+- Phase 1-4 回看 CTO review：`reviews/2026-04-25-phase-1-4-strict-cto-review.md`（新增 tester 前 P1 风险 + Phase 6 前置 P0 清单）
 
 ### 续做指南（下次会话第一件事读这段）
 

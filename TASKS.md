@@ -7,48 +7,41 @@
 
 ## 🎯 Now（最多 1 件，AI 正在做的）
 
-- （空，Phase 5 已收口，等用户发起 tester 邀请或 Phase 6 启动）
+- （空，Phase 6 playbook 就绪，等用户发起 Pre-tester gate 开工）
 
 ---
 
-## ⏭ Next — Phase 5.5 Tester 反馈轮（用户主导）
+## ⏭ Next — Phase 6 Pre-tester Gate（3 项，~2 小时）
 
-代码侧完全就绪，接下来由用户操作：
+Phase 6 playbook：`playbook/phase-6/overview.md`
 
-- 准备 tester 邀请文案（建议说明：测试网、未实装的功能清单、已知 bug 清单、反馈提交方式）
-- 决定反馈渠道（微信群 / 飞书文档 / GitHub Issues 任选）
-- 从小范围开始放人（5 人 → 观察 1-2 天 → 再 +5-10 人）
-- 收集反馈 1-2 周 → 输入 Phase 6 UI 重设计
+**放 tester 前必修**（Phase 5 severity 分析 + Phase 1-4 回看合集）：
 
-**已清的 bug**（commit 历史见 git log）：
-- Bug #2 LoginButton 点地址登出 ✅
-- Bug #3 operator 钱包余额 ✅（用户加 0.01 ETH，OP Sepolia gas 极便宜足够 10-20 人轮）
-- Bug #6 rate limit 误判 ✅（实际正常工作）
-- Bug #7 material mint 并发重复入队 ✅
-- Bug #8 爱心 UI 悲观回退 ✅
-- Codex 第一轮 P0：post-send rollback × 2 / markSuccess 改序 / 并发 CAS / check-balance 状态枚举 / middleware 观测 ✅
+- [ ] **A2** — material failed 重试语义（`app/api/mint/material/route.ts`，30-60 分）
+- [ ] **B1** — NFT localStorage 按 user_id 命名空间（`src/lib/nft-cache.ts`，30 分）
+- [ ] **E1** — `/api/health` 暴露 mint_queue 的 failed / stuck / retry / oldest age（30-60 分）
+
+通过 → 部署 → 限定范围 tester 放人 1-2 周
 
 ---
 
-## ⏭⏭ Phase 6 启动前必修（草稿铸造按钮 UI = bug #5 接通前必须先修）
+## ⏭⏭ Phase 6 并行 tracks（Pre-tester gate 后开工）
 
-来源：`reviews/2026-04-25-phase-5-strict-cto-review.md`
+| Track | 主题 | 依赖 | 详细 playbook |
+|---|---|---|---|
+| **A** | 铸造链路稳定性（ScoreNFT cron 四连 + sync cursor + 草稿原子 + /score 灾备 + owner 投影）| 无 | `playbook/phase-6/track-a-mint-stability.md` |
+| **B** | UI 重设计 + 前端体验（NFT cache / UI 重设计 / 草稿按钮 / 音频叠加 / 前端韧性）| B2 等 tester 反馈；B3 依赖 A1 | `playbook/phase-6/track-b-ui-redesign.md` |
+| **C** | 合约 & 部署硬化（setTokenURI 防覆盖 / 权限最小化 / Deploy 清洁 / TBA 决策）| 无 | `playbook/phase-6/track-c-contracts.md` |
+| **D** | 空投闭环（条件性，D1 = 主网是否做空投）| D1 产品决策 | `playbook/phase-6/track-d-airdrop.md` |
+| **E** | 认证 & 观测收口（material health / Semi OAuth / Semi 探针 / Decoder fallback / 文档对齐）| E2 依赖 Semi OAuth | `playbook/phase-6/track-e-auth-observability.md` |
 
-- **ScoreNFT cron post-send rollback**（和 material/airdrop 同问题，第一轮漏修 score）
-  - `app/api/cron/process-score-queue/steps-chain.ts:58-76` stepMintOnchain 的 write-then-DB 要严格区分
-- **ScoreNFT claim RPC 加 durable lease**（事务外别的 cron 实例可抢同行）
-  - `supabase/migrations/phase-3/hotfix/015_claim_score_queue_rpc.sql` 需要 locked_at / processing 状态
-- **ScoreNFT receipt pending 不算失败**（对比 material 的正确处理）
-  - `steps-chain.ts:83-88` getTransactionReceipt 抛错应 return 等下次，不该递增 retry_count
-- **setTokenURI 拆步**（Phase 5 D2 要求，当前 waitForTransactionReceipt 阻塞 10s）
-  - 加 `uri_tx_hash` 字段，无 hash 发 + 存，有 hash 查 receipt
-- **Bug #5 草稿铸造按钮 UI**（ScoreNFT cron 四连修完后做）
-  - `DraftCard.tsx` 加铸造按钮，`jam-source.ts` 加 mintScore 函数
+**26 step / 覆盖 29 个 findings**（见 `reviews/2026-04-25-phase-1-4-strict-cto-review.md` + `reviews/2026-04-25-phase-5-strict-cto-review.md`）
 
-## ⏭⏭ 之后
+---
 
-- **Phase 6** — UI 重设计（基于 tester 反馈 + 顺带修 bug #1 音频叠加 + bug #5 草稿铸造按钮）
-- **Phase 7** — OP 主网
+## ⏭⏭⏭ 之后
+
+- **Phase 7** — OP 主网（部署 runbook + 监控告警 + 退出策略）
 
 延后项清单：`reviews/phase-0-deferred.md` + `reviews/phase-1-deferred.md` + `reviews/2026-04-24-phase-5-s5-smoke-test.md`
 

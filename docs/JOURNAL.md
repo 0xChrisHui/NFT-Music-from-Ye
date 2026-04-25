@@ -119,3 +119,23 @@
   - STATUS 里写"S0-S5 完成"容易误导——playbook 要求 12 项冒烟全通，实际只 10/12（B9 草稿铸造 + C12 限流 C12 都有例外）
   - 决定：STATUS 改为"部署完成，开放限定范围 tester"
   - 影响：以后继任者读文档不会以为 Phase 5 无条件完成
+
+### 2026-04-25 晚 — Phase 6 kickoff 决策
+
+- **Phase 6 范围扩大：从"UI 重设计"变成"所有剩余开发工作"**
+  - 起因：用户决策"所有需要修改、现在需要去做的开发工作，全部放在 phase 6"
+  - 推翻：之前 "Phase 6 = UI 重设计，主网前必做清单单独挂" 的切法
+  - 决定：Phase 1-5 两轮严格 CTO review 的 29 项 findings 全部划入 Phase 6，按域切 5 track；UI 重设计是其中一条 track 而不是整个 Phase
+  - 影响：Phase 7 = 纯主网部署 + 监控 + 退出准备，所有代码层修复收口在 Phase 6 做完
+- **Phase 6 用多 track 并行组织，不线性推进**
+  - 起因：29 findings 按域天然聚类，且大部分 track 解耦（只有 Track A1 → B3 硬依赖，其余独立）
+  - 决定：5 track 各自有独立 playbook（`playbook/phase-6/track-a 到 track-e.md`），可并行开工
+  - 影响：Phase 6 完结标准从"playbook steps 按序完成"变成"5 track 都达到各自完结标准"
+- **Pre-tester gate — 3 项放人前必修**
+  - 起因：A2 (material failed 重试) + B1 (NFT cache 隔离) + E1 (material health) 都是 tester 会高频踩到但工作量小的问题
+  - 决定：Phase 6 开工第一件事做这 3 项（共 ~2 小时），完了才放 tester
+  - 影响：tester 反馈窗口和 5 track 开工并行，不浪费这 1-2 周
+- **Phase 6 Track D（空投）是条件性的**
+  - 起因：主网是否做空投是产品决策，不是技术决策。修全套要 1 周；不做的话只需要改 admin header 鉴权 (D2)
+  - 决定：D1 作为 gate step，决策前 D3-D6 都挂起；D2（admin header）不管 D1 怎么定都做，因为 query token 是安全泄露点
+  - 影响：Phase 6 工作量估算有 1 周浮动区间取决于 D1 结果
