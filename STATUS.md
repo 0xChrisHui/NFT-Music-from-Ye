@@ -12,18 +12,20 @@
 
 ## 当前进度
 
-**做到哪**: Phase 5 整条链路已部署上线，域名 `https://pond-ripple.xyz` 可访问，5 个 cron job 运行中，12 项冒烟测试 10 项通过
-**下一步**: 修 3 个测试前必修 bug（#2 钱包地址登出 / #3 operator 余额过低 / #6 rate limit 失效）→ 10-20 人 tester 反馈轮 → Phase 6 UI 重设计 → Phase 7 OP 主网
+**做到哪**: Phase 5 整条链路已部署上线 + Review P0 修复已 commit `1bb1b05`
+**下一步**: bug #3 operator 钱包 faucet → 10-20 人 tester 反馈轮 → Phase 6 UI 重设计 → Phase 7 OP 主网
 **剩余**: Phase 5.5（tester 反馈轮）→ Phase 6（UI 重设计）→ Phase 7（OP 主网）
 
-### Phase 5 交付物（2026-04-24 收口）
+### Phase 5 交付物（2026-04-25 收口）
 
 - 域名：`pond-ripple.xyz`（Vercel 代管）
 - 部署：Vercel Hobby（免费）+ cron-job.org（免费外部触发，5 个 job）
 - API：/api/ping 公开 / /api/health 鉴权 / 404 + error 页 / cron 鉴权迁移到 Authorization header
 - Arweave：Turbo 钱包环境变量化（TURBO_WALLET_JWK）
-- 限流：middleware + Upstash Redis（**代码就绪但线上未生效，bug #6 待修**）
-- 冒烟测试文档：`reviews/2026-04-24-phase-5-s5-smoke-test.md`
+- 限流：middleware + Upstash Redis ✅ 线上验证 20/30 并发 → 20 次 429（2026-04-25 确认正常工作）
+- Review 修复 commit `1bb1b05`：post-send rollback × 2 + markSuccess 改序 + 并发 CAS + 日志观测 + LoginButton + check-balance 状态枚举
+- 冒烟测试文档：`reviews/2026-04-24-phase-5-s5-smoke-test.md`（bug #6 部分已修订为误判）
+- 完成 review：`reviews/2026-04-24-phase-5-completion-review.md`（Codex 出）
 
 ### 续做指南（下次会话第一件事读这段）
 

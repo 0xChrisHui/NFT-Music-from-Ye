@@ -11,15 +11,15 @@
 
 ---
 
-## ⏭ Next — Phase 5.5 Tester 前必修（3 个 bug）
+## ⏭ Next — Phase 5.5 Tester 前必修（1 个 bug，只剩用户操作）
 
 详细 bug 背景：`reviews/2026-04-24-phase-5-s5-smoke-test.md`
 
 - **Bug #3** — operator 钱包 faucet 补到 0.1+ ETH（OP Sepolia，15 分钟，用户操作）
-- **Bug #6** — Rate limit 线上失效（查 Vercel 上 Upstash 两个环境变量值，30 分钟）
-- **Bug #2** — 点击钱包地址 → 直接登出（改 LoginButton 组件，30-60 分钟）
 
-**全修完 → 上 10-20 人 tester 反馈轮**（1-2 周收集反馈作为 Phase 6 输入）
+已清（commit `1bb1b05`）：bug #2 LoginButton / bug #6 Rate limit 误判确认正常 / Codex ➊➋➌ post-send rollback / 并发 CAS / middleware 观测 / check-balance 状态枚举
+
+**Bug #3 解除 → 上 10-20 人 tester 反馈轮**（1-2 周收集反馈作为 Phase 6 输入）
 
 ## ⏭⏭ 之后
 

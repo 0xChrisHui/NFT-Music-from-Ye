@@ -27,7 +27,7 @@
 
 ## Bug 清单（6 个）
 
-### 测试前必修（3 个）
+### 测试前必修（2026-04-25 修订后：只剩 1 个）
 
 #### Bug #3 — operator 钱包余额过低
 - **严重度**：高（阻塞 tester）
@@ -36,16 +36,20 @@
 - **修复**：走 OP Sepolia faucet 领 0.1+ ETH 到 operator 地址
 - **操作者**：用户（需要 faucet 页面验证人机）
 
-#### Bug #6 — Rate limit 线上失效（Upstash 未生效）
-- **严重度**：高（阻塞 tester，安全风险）
-- **现状**：25 次连续 POST /api/mint/material 全部 401，无任何 429
-- **症状**：middleware 代码正确（`middleware.ts:25-33` 包含 `/api/mint/` 前缀）且 matcher 是 `/api/:path*`，说明限流路径命中但未执行
-- **根因推测**：Vercel 上 `UPSTASH_REDIS_REST_URL` 或 `UPSTASH_REDIS_REST_TOKEN` 的值有问题（比如 token 复制漏字符），middleware 初始化不报错但调 `ratelimit.limit()` 时失败 → 进入 fail-open catch（`middleware.ts:93-96`）
-- **修复步骤**：
-  1. Vercel Dashboard → Settings → Environment Variables → 检查两个 UPSTASH_ 变量的值
-  2. Vercel → Deployments → 最新部署 → Runtime Logs 找 "Upstash 初始化失败" 或 fetch 错误
-  3. 和 Upstash 控制台的 REST URL / Token 逐字符对比
-  4. 改好后 Redeploy，重跑 C12 测试（连续 25 次 POST，第 21+ 次应该返回 429）
+#### Bug #6 — Rate limit 线上失效 ❌ **误判（2026-04-25 修订）**
+- **原判断**：25 次连续 POST /api/mint/material 全部 401，无任何 429 → 推测 Upstash fail-open
+- **实际情况**：Rate limit 一直正常工作。真正原因是我 C12 测试方法有缺陷
+- **2026-04-25 验证**：
+  - Vercel Runtime Log 显示 middleware 确实调用 Upstash 并拿到 200 响应（`POST intent-pig-71885.upstash.io/pipeline → 200 235ms`）
+  - 从用户机器发 30 个**并发**请求：`10 × 401 + 20 × 429`，完全符合 sliding window 20/10s 的设计
+- **原测试为什么漏**：
+  - Vercel middleware 跑在 sin1（新加坡）
+  - Upstash 在 us-east（创建时选的 US East 1）
+  - 每次 middleware → Upstash 往返 ~235ms 跨洋延迟
+  - 顺序 curl 变成每 1.6 秒发一次，30 个请求均摊到 49 秒
+  - 每 10 秒窗口只有 6 个请求 → 永远到不了 20 阈值
+- **附带发现（不阻塞）**：跨区延迟给每个限流 API 增加 ~250ms 开销。未来可以迁 Upstash 到 ap-southeast-1 优化。
+- **commit `1bb1b05` 加的 middleware 日志**：虽然 bug 是误判，但这些 `console.warn` / `console.error` 观测日志是有用的预防性改进，以后 Upstash 真挂了能直接看日志定位。
 
 #### Bug #2 — 点击右上角钱包地址 → 直接登出
 - **严重度**：中（破坏用户体验，tester 很容易误触）
