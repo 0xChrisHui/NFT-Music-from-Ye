@@ -139,3 +139,28 @@
   - 起因：主网是否做空投是产品决策，不是技术决策。修全套要 1 周；不做的话只需要改 admin header 鉴权 (D2)
   - 决定：D1 作为 gate step，决策前 D3-D6 都挂起；D2（admin header）不管 D1 怎么定都做，因为 query token 是安全泄露点
   - 影响：Phase 6 工作量估算有 1 周浮动区间取决于 D1 结果
+
+### 2026-04-25 深夜 — Phase 6 Playbook 严格 CTO Review 修正
+
+基于 `reviews/2026-04-25-phase-6-playbook-cto-review.md` 重写 playbook。5 个关键调整：
+
+- **A2 failed retry 不能一律 reset —— 加 `failure_kind` 区分 safe_retry / manual_review**
+  - 起因：第一版 A2 写 "existing.status === 'failed' → 重置为 pending"。但某些 failed（stuck 无 tx_hash / post-send DB 失败）含义是"链上可能已发但 DB 未落"，reset 会重复 mint，和 Phase 5 Bug #7 的修复冲突
+  - 决定：mint_queue 加 `failure_kind` 字段；cron 写 failed 时明确分类；API 只允许 `safe_retry` 路径自动重入队，`manual_review` 返 409 + needsReview
+  - 影响：Pre-tester gate A2 的工作量从 30-60 分升到 1-2 小时（含 migration）；前端 useFavorite 需要处理 needsReview 分支
+- **operator 全局锁从 Track D 条件步骤升级为 Track A0 必修**
+  - 起因：第一版把 operator 钱包串行锁放到 Track D4，依赖 "D1 = 做空投" 才触发。但锁是 material / score / airdrop 三条 cron 共用 EOA 的硬问题，即使空投不启用，Phase 7 主网前也必须有
+  - 决定：升级为 Track A0，成为 Phase 6 必修 gate。A0 阻塞 B3（草稿铸造按钮）接通 + 任何空投 cron 启用
+  - 影响：Track A 从 6 step 变 7 step；Track D 去掉锁相关步骤
+- **A1 Durable Lease 补完整规格（lease_owner + heartbeat + owner CAS）**
+  - 起因：第一版只写 `locked_at / lease_expires_at`，没要求 lease_owner。半个 lease 模式无法证明并发安全：A 锁过期 → B 接手推进 → A 恢复后仍可能用 `.eq('id', row_id)` 覆盖 B 的状态
+  - 决定：claim 时生成唯一 UUID `lease_owner` 写入；**所有**状态推进带 CAS `WHERE locked_by = my_owner AND lease_expires_at > now()`；长步骤 heartbeat 续租；终态释放锁
+  - 影响：Track A1 工作量从"1 天"升到"1-2 天"，但这是 Phase 6 最核心的并发安全前提
+- **Track C 合约重部署必须 Pre-tester 前集中完成**
+  - 起因：第一版说 Track C "可随时并行"。但 C1/C4 重部署 ScoreNFT + Orchestrator，会改合约地址。tester 窗口中途切 = 用户今天的 NFT 明天因环境切换消失，反馈严重失真
+  - 决定：Track C 全部 4 steps 收进 Phase 6 kickoff 的"步骤 1"，Pre-tester gate 之前一次性完成
+  - 影响：Pre-tester 前多一段合约工作（~1 天），但避免 tester 反馈污染
+- **Pre-tester gate 加 G0 运营就绪检查**
+  - 起因：第一版只有 3 个代码项（A2/B1/E1），没检查 operator 余额 / cron-job.org 状态 / Vercel env 同步 / 真实 smoke。代码修完 ≠ 环境就绪
+  - 决定：G0 不写代码但要跑清单（6 项）产出可验证结果，通过才能放人
+  - 影响：Pre-tester gate 从 3 项扩 4 项（+15 分钟）

@@ -1,32 +1,56 @@
 # Track A — 铸造链路稳定性
 
-> **范围**：ScoreNFT cron 四连 + material failed 重试 + 链上事件同步事务性 +
-> 草稿保存原子化 + /score 链上灾备 + 我的乐谱按 owner 投影
+> **范围**：operator 全局串行锁 + ScoreNFT cron 恢复语义重做 + material failed 可区分重试 +
+> 链上事件同步事务性 + 草稿保存原子化 + /score 链上灾备 + 我的乐谱语义（决策 gate）
 >
-> **前置**：无 — Track A 纯后端/DB，不依赖 UI / tester 反馈
+> **前置**：A0 是 Phase 6 所有涉及 operator 钱包 cron 的前置；其他 step 在 A0 之后可并行
 >
-> **对应 findings**：#1 #3 #17 #18 #19 #21 #22（共 7 项，其中 #17 + #18 合并为 A1）
+> **对应 findings**：#1 #3 #5（原 D4 升级）#17 #18 #19 #21 #22
 >
-> **核心交付物**：素材 + ScoreNFT + 链上事件三条后端链路全部达到"tester 公开 + 未来主网"的恢复语义标准
+> **核心交付物**：三条后端铸造链路 + 链上事件同步 + 草稿链路，全部达到"tester 公开 + 未来主网"的恢复语义 + 并发安全 + 幂等标准
 
 ---
 
 ## 冻结决策
 
-### D-A1 — 所有 cron 接入 Durable Lease 模式
+### D-A1 — 所有 cron 接入 Full Durable Lease 模式（带 owner CAS）
 
-所有会触发链上交易的 cron 都改成 `claim + lease(expires_at) + heartbeat` 模式。事务外别的 cron 实例抢不到同一 job，直到 lease 过期或主动释放。详见概念词典 `docs/LEARNING.md` "Durable Lease"。
+claim 时生成唯一 `lease_owner` UUID 写入 DB。后续**所有**状态推进的 DB update 都必须带 CAS：
 
-### D-A2 — "tx 已发 DB 未落"一律标 failed，人工核查
+```
+WHERE id = :row_id AND locked_by = :my_owner AND lease_expires_at > now()
+```
 
-后端 cron 里所有链上 writeContract 之后的 DB 写失败**一律不 reset**。改为：
-- 日志 CRITICAL 标记 tx_hash + job id
-- status = failed，在 last_error 记"tx 已发但 DB 失败，人工核查 operator tx 历史"
-- 人工按日志去 Etherscan 找 tx，决定手动补 DB / 作废
+长步骤（链上交易）触发 heartbeat 续租；失败或成功后显式释放锁。Lease 过期的 worker 不允许再写状态（CAS 会失败返回 0 行受影响）。
+
+**为什么必须是 full spec**：半个 lease 模式（只加 `lease_expires_at` 没加 `lease_owner`）只能减少并发窗口，不能证明并发安全：A worker 拿锁 → 卡住 → lease 过期 → B 接手推进 → A 恢复后仍可能用 `.eq('id', row.id)` 覆盖 B 的状态。CAS 带 owner 是唯一可证明的并发安全模式。
+
+### D-A2 — "tx 已发 DB 未落"一律标 failed + failure_kind='manual_review'，禁止自动重试
+
+所有链上 writeContract 之后的 DB 写失败 **一律不 reset，也不能被前端 API 自动重试**。
+
+失败类型（`failure_kind` 字段）：
+
+| failure_kind | 含义 | 前端重试行为 |
+|---|---|---|
+| `'safe_retry'` | 链上 revert / chain send 未发出 / 其他明确安全可重试 | API 可自动 reset → pending，重新入队 |
+| `'manual_review'` | 链上可能已发但 DB 未落 / 人工介入 | API 返 409 + "铸造失败，请联系运维"，**不重试** |
+
+cron 写 failed 时必须同时写 `failure_kind`。API 重试路径只允许 `safe_retry`。
 
 ### D-A3 — receipt pending ≠ failed
 
-`getTransactionReceipt` 抛错（tx 未被 RPC 返回）不算失败。返回 null 等下次 cron。retry_count 不增加。只有 receipt.status = 'reverted' 或其他显式链上失败才算失败。
+`getTransactionReceipt` 抛错（tx 尚未被 RPC 返回）不算失败。返回 null 等下次 cron。retry_count 不增加。只有 `receipt.status !== 'success'` 才算显式链上失败。
+
+### D-A4 — 运营钱包全局串行锁是 Phase 6 必修，与空投是否启用无关
+
+material / score / airdrop 三条 cron 共用同一 operator EOA，任意两个同时发 tx 都可能 nonce race。因此 **A0 运营钱包全局锁是 Phase 6 必修 gate，不随 Track D 决策变化**。
+
+A0 完成前不允许接通 B3（草稿铸造按钮）+ 不允许启用 airdrop cron。
+
+### D-A5 — A6 /me 语义是产品决策，不是工程偏好
+
+JOURNAL 2026-04-12 有决策 "/me 展示我铸造的"。A6 要改成 owner 投影等于推翻产品语义。Phase 6 kickoff 阶段由用户显式决策后再执行（见 [A6](#step-a6--我的乐谱语义决策--实现)）。
 
 ---
 
@@ -34,41 +58,135 @@
 
 | Step | Findings | 内容 | 工作量 | 依赖 |
 |---|---|---|---|---|
-| [A1](#step-a1--scorenft-cron-恢复语义重做) | #17 #18 | ScoreNFT cron 四连（post-send + durable lease + receipt pending + setTokenURI 拆步）| 1 天 | 无 |
-| [A2](#step-a2--material-failed-重试语义pre-tester-gate) | #1 | material failed job 允许重试 / 明确返错 | 30-60 分 | 无（**Pre-tester**）|
-| [A3](#step-a3--sync-chain-events-cursor-事务性) | #3 | 单条 upsert 失败不推进 cursor，或完整事务 | 30-60 分 | 无 |
-| [A4](#step-a4--草稿保存原子化) | #19 | pending_scores 先 expired 再 insert 合并进 RPC | 1 小时 | 无 |
-| [A5](#step-a5--scoretokenid-链上灾备路径) | #21 | DB miss 时从 tokenURI 读 Arweave metadata + events | 半天 | 无 |
-| [A6](#step-a6--我的乐谱按-owner-投影) | #22 | /api/me/score-nfts 从 chain_events 算当前 owner | 半天 | A3 |
+| [A0](#step-a0--运营钱包全局串行锁) | 原 D4 (#5) | Redis 分布式锁 + 3 个 cron 入口包装 | 半天 | **Phase 6 必修 gate** |
+| [A1](#step-a1--scorenft-cron-恢复语义重做带-full-durable-lease) | #17 #18 | ScoreNFT cron 四连 + 完整 durable lease（lease_owner + heartbeat + CAS）| 1-2 天 | A0 |
+| [A2](#step-a2--material-failed-分类重试语义pre-tester-gate) | #1 | mint_queue 加 failure_kind + API 只重试 safe_retry | 1-2 小时 | 无（**Pre-tester**）|
+| [A3](#step-a3--sync-chain-events-cursor-事务性) | #3 | 单条 upsert 失败不推进 cursor | 30-60 分 | 无 |
+| [A4](#step-a4--草稿保存原子化) | #19 | pending_scores expired + insert 合并 RPC | 1 小时 | 无 |
+| [A5](#step-a5--scoretokenid-链上灾备路径) | #21 | DB miss 时从 tokenURI 拉 Arweave | 半天 | 无 |
+| [A6](#step-a6--我的乐谱语义决策--实现) | #22 | 产品决策 gate + 按决定实现 | 决策 10 分 + 实现 0-半天 | A3（若做 owner 投影）|
 
 ---
 
-## Step A1 — ScoreNFT cron 恢复语义重做
-
-**合并 finding #17 + #18，4 个子改动一次到位。**
+## Step A0 — 运营钱包全局串行锁
 
 ### 概念简报
-ScoreNFT cron 现在有 4 个后端幂等/恢复缺口，tester 踩到草稿铸造按钮时会集中暴露：
-1. post-send rollback（tx 已发 DB 写失败 → reset → 重发）
-2. claim RPC 只有事务瞬时锁（别的 cron 可抢同行）
-3. receipt pending 被当失败（孤儿 NFT）
-4. setTokenURI 未拆 uri_tx_hash（Vercel 10s 超时 / 重发同 URI）
+material / score / airdrop 三条 cron 共用 `operatorWalletClient`（同一 EOA）。只要任意两个 cron 同分钟发 tx，就会 nonce race：后发的 tx 可能 replace 前一笔、可能被 RPC 拒绝、可能互相覆盖。这是主网前硬门槛，**不是空投启用时才考虑的问题**。
 
 ### 📦 范围
-- `app/api/cron/process-score-queue/steps-chain.ts`（`stepMintOnchain` + `stepSetTokenUri` 重写）
-- `supabase/migrations/phase-6/021_score_nft_queue_lease.sql`（新建）
-- `supabase/migrations/phase-6/022_score_nft_queue_uri_tx_hash.sql`（新建）
-- `supabase/migrations/phase-6/023_claim_score_queue_durable_lease.sql`（新建 — 替换 `phase-3/hotfix/015_claim_score_queue_rpc.sql`）
-- `src/types/jam.ts`（ScoreMintQueueRow 新增 `locked_at / uri_tx_hash` 字段）
+- `src/lib/chain/operator-lock.ts`（新建，基于 Upstash Redis）
+- `app/api/cron/process-mint-queue/route.ts`（入口包装）
+- `app/api/cron/process-score-queue/route.ts`（入口包装）
+- `app/api/cron/process-airdrop/route.ts`（入口包装）
+- `docs/STACK.md`（白名单登记 `@upstash/redis` 的新用途 — 已装）
+- `docs/LEARNING.md`（新增"分布式互斥锁"词条）
 
 ### 做什么
 
-**1. DB：加 lease 字段 + uri_tx_hash 字段**
+**1. 锁模块**
+
+```ts
+// src/lib/chain/operator-lock.ts
+import 'server-only';
+import { Redis } from '@upstash/redis';
+
+const LOCK_KEY = 'op_wallet_lock';
+const LEASE_MS = 30_000;
+
+let redis: Redis | null = null;
+function getRedis() {
+  if (redis) return redis;
+  if (!process.env.UPSTASH_REDIS_REST_URL) return null;
+  redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL.replace(/^["']+|["']+$/g, '').trim(),
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!.replace(/^["']+|["']+$/g, '').trim(),
+  });
+  return redis;
+}
+
+export async function acquireOpLock(holder: string): Promise<boolean> {
+  const r = getRedis();
+  if (!r) {
+    console.warn('[op-lock] Upstash 未配置，无法加锁，跳过（仅限本地开发）');
+    return true; // 本地开发放行
+  }
+  const result = await r.set(LOCK_KEY, holder, { nx: true, px: LEASE_MS });
+  return result === 'OK';
+}
+
+export async function releaseOpLock(holder: string): Promise<void> {
+  const r = getRedis();
+  if (!r) return;
+  // Lua 脚本保证只释放自己的锁（避免误删别人的）
+  await r.eval(
+    `if redis.call("GET", KEYS[1]) == ARGV[1] then return redis.call("DEL", KEYS[1]) else return 0 end`,
+    [LOCK_KEY],
+    [holder],
+  );
+}
+```
+
+**2. 3 个 cron 入口包装**
+
+```ts
+// 每个 cron route.ts 的 GET 入口
+import { acquireOpLock, releaseOpLock } from '@/src/lib/chain/operator-lock';
+import { randomUUID } from 'crypto';
+
+export async function GET(req: NextRequest) {
+  if (!verifyCronSecret(req)) return NextResponse.json({ error: '无效的 secret' }, { status: 401 });
+
+  const holder = `mint-queue-${randomUUID()}`;
+  if (!await acquireOpLock(holder)) {
+    return NextResponse.json({ result: 'busy', holder: null });
+  }
+  try {
+    // ... 原业务逻辑
+  } finally {
+    await releaseOpLock(holder);
+  }
+}
+```
+
+**3. 文档**
+
+- `docs/LEARNING.md` 新增"分布式互斥锁（SETNX + Lua 安全释放）"
+- `docs/ARCHITECTURE.md` 决策章节加"operator 钱包全局串行"
+
+### 验证标准
+- [ ] `@upstash/redis` 已在 STACK.md 白名单（已有，用途扩展）
+- [ ] 3 个 cron 入口都有 acquire/release 包装
+- [ ] 手动同时触发 3 个 cron → 只 1 个拿到锁，其余返 `{result:'busy'}`
+- [ ] 30s 过期后新 cron 能接管
+- [ ] 本地开发（无 UPSTASH env）→ console.warn + 放行
+- [ ] `scripts/verify.sh` 通过
+
+---
+
+## Step A1 — ScoreNFT cron 恢复语义重做（带 Full Durable Lease）
+
+### 概念简报
+合并 #17 + #18，4 个子改动 + 完整 durable lease：
+1. post-send rollback 修复（同 material 模式）
+2. claim RPC 加 `lease_owner + lease_expires_at + CAS on all updates`
+3. receipt pending 返 null 等下次
+4. setTokenURI 拆步（加 `uri_tx_hash`）
+
+### 📦 范围
+- `app/api/cron/process-score-queue/steps-chain.ts`（两个 step 重写）
+- `supabase/migrations/phase-6/021_score_nft_queue_lease.sql`（新建）
+- `supabase/migrations/phase-6/022_score_nft_queue_uri_tx_hash.sql`（新建）
+- `supabase/migrations/phase-6/023_claim_score_queue_durable_lease.sql`（新建，替换 `phase-3/hotfix/015`）
+- `src/types/jam.ts`（`ScoreMintQueueRow` 新增 `locked_by / lease_expires_at / uri_tx_hash`）
+
+### 做什么
+
+**1. DB schema**
 
 `021_score_nft_queue_lease.sql`：
 ```sql
 alter table score_nft_queue
-  add column locked_at timestamptz,
+  add column locked_by uuid,
   add column lease_expires_at timestamptz;
 
 create index idx_score_nft_queue_lease on score_nft_queue (lease_expires_at)
@@ -80,120 +198,235 @@ create index idx_score_nft_queue_lease on score_nft_queue (lease_expires_at)
 alter table score_nft_queue add column uri_tx_hash text;
 ```
 
-**2. claim_score_queue_job RPC 改写为 Durable Lease**
+**2. claim RPC 重写（带 owner）**
 
 `023_claim_score_queue_durable_lease.sql`：
-- 原来：`FOR UPDATE SKIP LOCKED` + `update updated_at`
-- 改为：`FOR UPDATE SKIP LOCKED` + `update locked_at = now(), lease_expires_at = now() + interval '5 minutes'`
-- 查询条件额外加：`lease_expires_at is null or lease_expires_at < now()`（过期 lease 可被重新抢）
+```sql
+create or replace function claim_score_queue_job(
+  p_owner uuid,
+  p_lease_minutes int default 5
+) returns score_nft_queue as $$
+declare
+  r score_nft_queue;
+begin
+  update score_nft_queue set
+    locked_by = p_owner,
+    lease_expires_at = now() + (p_lease_minutes || ' minutes')::interval,
+    updated_at = now()
+  where id = (
+    select id from score_nft_queue
+    where status not in ('success', 'failed')
+      and (lease_expires_at is null or lease_expires_at < now())
+    order by updated_at asc
+    limit 1
+    for update skip locked
+  )
+  returning * into r;
+  return r;
+end;
+$$ language plpgsql;
+```
 
-**3. stepMintOnchain 重写（post-send 分离 + receipt pending 兜底）**
+**3. route.ts 调用 RPC 时传 owner**
 
 ```ts
-// 无 tx_hash → 发 tx + 存 hash
+import { randomUUID } from 'crypto';
+const leaseOwner = randomUUID();
+const { data: row } = await supabaseAdmin.rpc('claim_score_queue_job', {
+  p_owner: leaseOwner,
+  p_lease_minutes: 5,
+});
+```
+
+**4. stepMintOnchain + stepSetTokenUri 所有状态更新带 owner CAS**
+
+```ts
+// 推进到 uploading_metadata（或任何状态）
+const { data: updated } = await supabaseAdmin
+  .from('score_nft_queue')
+  .update({ status: 'uploading_metadata', tx_hash: txHash, updated_at: now })
+  .eq('id', row.id)
+  .eq('locked_by', leaseOwner)           // ← CAS 1
+  .gt('lease_expires_at', new Date().toISOString())  // ← CAS 2
+  .select('id')
+  .maybeSingle();
+if (!updated) {
+  // 锁已过期或被别人抢 — 放弃写入，日志记 WARN
+  console.warn(`[score-cron] lease lost for ${row.id}，放弃本次状态推进`);
+  return; // 下次 cron 会重新 claim
+}
+```
+
+**5. Heartbeat（长步骤前后续租）**
+
+```ts
+// 在 stepUploadEvents / stepUploadMetadata 等可能 > 1 分钟的步骤前后调用
+async function heartbeat(jobId: string, owner: string) {
+  await supabaseAdmin
+    .from('score_nft_queue')
+    .update({ lease_expires_at: new Date(Date.now() + 5*60*1000).toISOString() })
+    .eq('id', jobId)
+    .eq('locked_by', owner);
+}
+```
+
+**6. post-send rollback 修复 + receipt pending 兜底**
+
+同 material/airdrop 模式，分离 chain send 和 DB 写：
+
+```ts
 if (!row.tx_hash) {
   let txHash: `0x${string}`;
   try {
     txHash = await operatorWalletClient.writeContract({...});
   } catch (err) {
-    throw new Error(`chain send failed: ${err}`); // 外层 catch resetToPending
+    throw new Error(`chain send failed: ${err}`); // outer catch → resetToPending (safe_retry)
   }
-  // tx 已广播 — 下面任何失败都不能 reset
-  const { error: dbErr } = await supabaseAdmin
-    .from('score_nft_queue')
+  // tx 已广播 — DB 失败不 reset
+  const { data: dbOk } = await supabaseAdmin.from('score_nft_queue')
     .update({ tx_hash: txHash, updated_at: now })
-    .eq('id', row.id);
-  if (dbErr) {
-    console.error(`CRITICAL: score tx ${txHash} DB 写失败 job=${row.id}: ${dbErr.message}`);
-    // 标 failed + last_error，不 reset
+    .eq('id', row.id).eq('locked_by', leaseOwner).gt('lease_expires_at', now)
+    .select('id').maybeSingle();
+  if (!dbOk) {
+    console.error(`CRITICAL: score tx ${txHash} DB 写失败 job=${row.id}`);
     await supabaseAdmin.from('score_nft_queue').update({
       status: 'failed',
-      last_error: `CRITICAL post-send: tx ${txHash} DB write failed`,
-    }).eq('id', row.id);
+      last_error: `CRITICAL: tx ${txHash} broadcast but DB write lost (lease ${leaseOwner})`,
+    }).eq('id', row.id).eq('locked_by', leaseOwner);
     return 'failed';
   }
-  return 'minting_onchain'; // 保持状态，下次查 receipt
+  return 'minting_onchain';
 }
 
-// 有 tx_hash → 查 receipt（pending 返 null 等下次）
+// 有 tx_hash → 查 receipt（pending 等下次）
 let receipt;
 try {
   receipt = await publicClient.getTransactionReceipt({ hash: row.tx_hash });
 } catch {
-  return 'minting_onchain'; // receipt 未出 — 不算失败
+  return 'minting_onchain'; // receipt 未出，不算失败
 }
-if (receipt.status !== 'success') {
-  throw new Error(`tx reverted: ${row.tx_hash}`);
-}
-// ... 提取 tokenId 写 DB
-return 'uploading_metadata';
+if (receipt.status !== 'success') throw new Error(`tx reverted: ${row.tx_hash}`);
+// ... 提取 tokenId + 推进（带 CAS）
 ```
 
-**4. stepSetTokenUri 拆步**
+**7. 成功/失败后释放 lease**
 
-改造为和 stepMintOnchain 相同的两阶段：
-- 无 `uri_tx_hash` → 发 setTokenURI + 存 hash → 保持 `setting_uri` 状态
-- 有 `uri_tx_hash` → 查 receipt（pending 返 null）→ 写 mint_events + 推 success
+```ts
+// 终态 (success 或 failed) 的同时释放锁
+.update({ status: 'success', locked_by: null, lease_expires_at: null, ... })
+```
 
 ### 验证标准
-- [ ] 3 条 migration 在 Supabase 执行完毕
-- [ ] 模拟 DB 写失败后查日志 → CRITICAL + job status = failed（不 reset）
-- [ ] 两个 cron 同时触发 → 只有一个拿到 lease，另一个 SKIP
-- [ ] 手动发起一次乐谱铸造（scripts/）→ 走完 pending → success
+- [ ] 3 条 migration 在 Supabase 执行
+- [ ] 启动两个 cron 并发触发同一 job → 只 1 个能推进，另一个 claim 返 null
+- [ ] 模拟 lease 过期 + stale worker 尝试写 → CAS 失败，不覆盖状态
+- [ ] 模拟 DB 写失败 → status = failed + last_error 记录，job 不会被重 claim
+- [ ] receipt pending 场景（tx 未被 RPC 返回）→ retry_count 不增加
+- [ ] 端到端：手动触发一次乐谱铸造 → pending → uploading → minting_onchain → uploading_metadata → setting_uri → success
 - [ ] `scripts/verify.sh` 通过
 
 ---
 
-## Step A2 — material failed 重试语义【Pre-tester Gate】
+## Step A2 — material failed 分类重试语义【Pre-tester Gate】
 
 ### 概念简报
-现在 `POST /api/mint/material` 对同 `idempotency_key` 命中 failed job 会返回 `{result:"ok"}`，前端继续红心 UI 但后端不重新入队。tester 第一次收藏失败后永远卡 failed。
+当前 `POST /api/mint/material` 对 failed job 直接返 `{result:"ok"}`，前端继续红心但后端不入队。**修复方式不能简单重置为 pending**，因为某些 failed 状态（post-send DB 失败 / stuck 无 tx_hash）含义是"链上可能已发但 DB 未落"，重置会导致重复 mint。
+
+必须引入 `failure_kind` 字段区分两类失败。
 
 ### 📦 范围
 - `app/api/mint/material/route.ts`
+- `app/api/cron/process-mint-queue/steps.ts`（所有标 failed 的路径都写 failure_kind）
+- `supabase/migrations/phase-6/024_mint_queue_failure_kind.sql`（新建）
+- `src/types/tracks.ts`（若有相关类型）
 
 ### 做什么
-23505 冲突后查出 existing row，按 status 分 3 种路径：
-- `success` → 返 409 "已铸造"
-- `pending / minting_onchain` → 返 200 复用
-- **`failed` → 重置为 pending + retry_count 重置 / 或明确返 409 "上次铸造失败，请稍后再试"**
 
-推荐行为：**重置**（用户点收藏的直觉就是"再来一次"）：
+**1. DB 加字段**
+
+`024_mint_queue_failure_kind.sql`：
+```sql
+alter table mint_queue
+  add column failure_kind text check (failure_kind in ('safe_retry', 'manual_review'));
+
+create index idx_mint_queue_failure_kind on mint_queue (failure_kind) where failure_kind is not null;
+```
+
+**2. cron 写 failed 时分类**
+
+`steps.ts` 的 resetToPending 改名为 `markFailed(jobId, kind, error)`，明确哪些情况走哪类：
+
+| 场景 | failure_kind | 原因 |
+|---|---|---|
+| 链上 send failed（writeContract throw）| `safe_retry` | tx 未上链，可安全重发 |
+| 链上 revert（receipt.status !== success）| `safe_retry` | tx 已结束，重新跑不会双 mint |
+| post-send DB 写 tx_hash 失败 | `manual_review` | 链上可能已发，不得自动重试 |
+| stuck（minting_onchain + 无 tx_hash + 超时）| `manual_review` | 链上状态未知 |
+| user 不存在 | `manual_review` | 需要人工核查数据 |
+| retry_count 耗尽 | `safe_retry` | 已重试 MAX 次，标 failed 保留（API 可选择继续重试或拒绝）|
+
+**3. API 路径分流**
+
 ```ts
-if (existing.status === 'failed') {
-  await supabaseAdmin.from('mint_queue')
-    .update({ status: 'pending', tx_hash: null, retry_count: 0 })
-    .eq('id', existing.id);
-  return NextResponse.json({ result: 'ok', mintId: existing.id, status: 'pending', retried: true });
+if (mintError.code === '23505') {
+  const { data: existing } = await supabaseAdmin
+    .from('mint_queue')
+    .select('id, status, failure_kind, last_error')
+    .eq('idempotency_key', idempotencyKey)
+    .single();
+  if (!existing) { throw mintError; }
+
+  if (existing.status === 'success') {
+    return NextResponse.json({ error: '你已经铸造过这个素材', alreadyMinted: true }, { status: 409 });
+  }
+  if (existing.status === 'pending' || existing.status === 'minting_onchain') {
+    return NextResponse.json({ result: 'ok', mintId: existing.id, status: existing.status });
+  }
+  // status = 'failed'
+  if (existing.failure_kind === 'safe_retry') {
+    await supabaseAdmin.from('mint_queue').update({
+      status: 'pending', tx_hash: null, retry_count: 0, failure_kind: null,
+    }).eq('id', existing.id).eq('status', 'failed');  // CAS
+    return NextResponse.json({ result: 'ok', mintId: existing.id, status: 'pending', retried: true });
+  }
+  // failure_kind = 'manual_review' 或 null（遗留数据）
+  return NextResponse.json({
+    error: '上次铸造未完成，需人工核查',
+    alreadyMinted: false,
+    needsReview: true,
+  }, { status: 409 });
 }
 ```
 
+**4. 前端改造（useFavorite）**
+
+收到 409 + needsReview → 显示"收藏失败，请联系客服"而非无限重试。
+
 ### 验证标准
-- [ ] 模拟一个 failed job → 再调 POST /api/mint/material → 返回 `retried: true` + job status 变 pending
-- [ ] cron 下一轮取走重新 mint
-- [ ] 前端爱心继续显示 success
+- [ ] migration 执行
+- [ ] 模拟 `failure_kind='safe_retry'` job → 再调 API → 重置为 pending，cron 继续
+- [ ] 模拟 `failure_kind='manual_review'` job → 再调 API → 返 409 + needsReview
+- [ ] Phase 5 修复的 Bug #7（idempotencyKey 稳定）仍然工作
+- [ ] `scripts/verify.sh` 通过
 
 ---
 
 ## Step A3 — sync-chain-events cursor 事务性
 
 ### 概念简报
-`sync-chain-events` 循环里 upsert 单条失败只打日志，然后仍推进 `last_synced_block`。一次 Supabase 抖动可能让某个 Transfer 永远漏扫，后续 owner 投影 / 空投快照会建在错误链上事实上。
+`sync-chain-events` 循环里单条 upsert 失败只打日志仍推进 `last_synced_block`。一次 Supabase 抖动可能让某个 Transfer 永远漏扫。
 
 ### 📦 范围
 - `app/api/cron/sync-chain-events/route.ts`
 
 ### 做什么
-两种方案二选一：
-- **方案 A（严格）**：任一 upsert 失败 → 立刻 return，不推进 cursor；下次 cron 从同一区块重试
-- **方案 B（事务）**：把批处理包进 Supabase RPC（batch upsert + update cursor in transaction），保证原子
+策略：任一 upsert 失败 → 立刻 return，不推进 cursor。
 
-推荐方案 A（简单、侵入小）：
 ```ts
 for (const event of events) {
   const { error } = await supabaseAdmin.from('chain_events').upsert(...);
   if (error) {
-    console.error(`[sync] upsert failed at block ${event.blockNumber}, 停止推进 cursor:`, error);
+    console.error(`[sync] upsert failed at block ${event.blockNumber}:`, error);
     return NextResponse.json({ result: 'partial', stoppedAt: event.blockNumber });
   }
 }
@@ -202,8 +435,8 @@ await supabaseAdmin.from('system_kv').update({ value: String(newCursor) }).eq('k
 ```
 
 ### 验证标准
-- [ ] 手动造一条 upsert 冲突 → cursor 不前进
-- [ ] 修复 upsert 后下轮 cron → cursor 推进
+- [ ] 模拟 upsert 错 → cursor 不前进
+- [ ] 修复后下轮 cron → cursor 推进
 - [ ] `scripts/verify.sh` 通过
 
 ---
@@ -211,87 +444,90 @@ await supabaseAdmin.from('system_kv').update({ value: String(newCursor) }).eq('k
 ## Step A4 — 草稿保存原子化
 
 ### 概念简报
-`POST /api/score/save` 先把旧 draft 标 `expired` 再插入新 draft。插入失败时旧草稿已失效，用户丢原本有效的创作。
+`POST /api/score/save` 先把旧 draft 标 expired 再插入新 draft。插入失败 = 用户丢旧草稿。
 
 ### 📦 范围
 - `app/api/score/save/route.ts`
-- `supabase/migrations/phase-6/024_save_score_rpc.sql`（新建 RPC）
+- `supabase/migrations/phase-6/025_save_score_rpc.sql`（新建 RPC）
 
 ### 做什么
-写一个 Supabase RPC `save_score_atomic(user_id, track_id, events_data, created_at)`：
-- BEGIN
-- UPDATE pending_scores SET status = 'expired' WHERE user_id + track_id AND status = 'draft'
-- INSERT new draft
-- COMMIT
+写 Supabase RPC `save_score_atomic`：BEGIN → UPDATE old→expired → INSERT new → COMMIT。
 
 route.ts 改为调用此 RPC。
 
 ### 验证标准
-- [ ] 手动在 RPC 里 throw 一个错 → 旧 draft 仍保留 draft 状态（事务回滚）
-- [ ] 正常路径：旧 draft → expired，新 draft 插入
+- [ ] RPC 内 throw → 旧 draft 仍保留
+- [ ] 正常路径：旧 → expired，新插入
 
 ---
 
 ## Step A5 — /score/[tokenId] 链上灾备路径
 
 ### 概念简报
-ARCH 承诺"永久可复现"，但 `src/data/score-source.ts` 查不到 `mint_events` 就返 null。DB 丢数据 = 已上链 ScoreNFT 404。
+ARCH 承诺永久可复现，但 `score-source.ts` 查不到 mint_events 返 null。DB 丢行 = 已上链 NFT 404。
 
 ### 📦 范围
 - `src/data/score-source.ts`
-- `src/lib/arweave/core.ts`（复用 `fetchFromArweave`）
+- 复用 `src/lib/arweave/core.ts` 的 `fetchFromArweave`
 
 ### 做什么
-DB 查不到时 fallback：
-1. 链上查 `tokenURI(tokenId)` → 得到 `ar://{txId}`
-2. `fetchFromArweave(txId)` 拿 metadata.json
-3. 从 metadata 的 `animation_url` 提取 events_ar_tx_id → fetch events.json
-4. 渲染页面
-
-把这条降级路径加在 `getScoreSource(tokenId)` 里。
+DB miss 时：链上 `tokenURI(tokenId)` → `fetchFromArweave` metadata → 提取 events_ar_tx_id → fetch events.json。
 
 ### 验证标准
-- [ ] 手动删一条 mint_events 记录 → 页面仍可渲染（从链上读）
-- [ ] 恢复 mint_events → 走回 DB 主路径（更快）
+- [ ] 删一条 mint_events → 页面仍能渲染（从链上）
+- [ ] 恢复 mint_events → 走回 DB 主路径
 
 ---
 
-## Step A6 — 我的乐谱按 owner 投影
+## Step A6 — 我的乐谱语义（决策 + 实现）
 
 ### 概念简报
-`/api/me/score-nfts` 现在按 `score_nft_queue.user_id`（= 初始 mint 者）。ScoreNFT 转手后原用户还能看、接收者看不到。
+JOURNAL 2026-04-12 决策：`/me = 我铸造的`。当时理由是转手场景极少，不值得增加复杂度。但 review 指出 Phase 4 已经做了空投 + 未来主网转手可能变多，"我铸造的" 语义可能和用户直觉冲突。
 
-### 📦 范围
-- `app/api/me/score-nfts/route.ts`
-- `chain_events` 表（已有）
+**这是产品决策，不是工程偏好**。必须在 kickoff 阶段由用户显式决定，才能执行。
 
-### 做什么
-查询改为：
-```sql
-SELECT score_nft_token_id, ... FROM chain_events
-WHERE contract_address = SCORE_NFT_ADDRESS
-  AND to_address = :user_evm_address
-  AND NOT EXISTS (
-    SELECT 1 FROM chain_events e2
-    WHERE e2.token_id = chain_events.token_id
-      AND e2.block_number > chain_events.block_number
-  )
-```
-（最近一次 Transfer 的 to = 当前 owner）
+### A6.0 — 决策 Gate
+
+3 个选项：
+
+**选项 1：保持"我铸造的"（推翻 A6 改动）**
+- 优点：语义稳定，和现有代码一致，复杂度最低
+- 缺点：ScoreNFT 转给朋友后，转出方仍看到，接收方看不到
+- 适合场景：产品强调"创作者归属"而非"持有权"
+
+**选项 2：改"我持有的"（按链上 owner）**
+- 优点：和 NFT 标准语义一致，接收方能看到
+- 缺点：需要依赖 chain_events 新鲜度（Track A3）+ 转出后原 minter 从 /me 消失
+- 适合场景：产品强调"钱包就是你"
+
+**选项 3：双分区 "我创作的 + 我持有的"**
+- 优点：兼得两种语义
+- 缺点：UI 更复杂，Phase 6 UI 重设计要跟进
+
+### 📦 范围（按决策）
+
+| 决策 | 范围 | 工作量 |
+|---|---|---|
+| 选项 1 | 无代码改动，更新 JOURNAL 说明 | 10 分钟 |
+| 选项 2 | `app/api/me/score-nfts/route.ts` 改查 chain_events；依赖 A3 | 半天 |
+| 选项 3 | 新 API `/api/me/score-nfts?kind=minted\|owned` + UI 加切换 | 1 天（UI 一起）|
 
 ### 依赖
-Track A3 完成（chain_events 是准确的链上事实）。
+选项 2/3 依赖 A3 完成（chain_events 是准确的链上事实）。
 
-### 验证标准
-- [ ] ScoreNFT 转手给另一个用户 → 原 /me 不再显示，新 /me 显示
-- [ ] 未转手的 ScoreNFT 正常显示在 minter 的 /me
+### 验证标准（选项 2 示例）
+- [ ] 转手 ScoreNFT 给 B → B 的 /me 显示，A 的 /me 不显示
+- [ ] 未转手 NFT 在 minter /me 正常显示
+- [ ] JOURNAL 更新决策记录
 
 ---
 
 ## Track A 完结标准
 
-- [ ] 6 steps 全绿
-- [ ] 5 条 migration（021-024 + 替换 015 hotfix）Supabase 执行
+- [ ] 7 steps 全绿（含 A0）
+- [ ] 5 条 migration（021-025 + 替换 phase-3/hotfix/015）Supabase 执行
+- [ ] Durable Lease 并发安全测试通过（手动模拟 stale worker）
+- [ ] operator 全局锁在 3 个 cron 入口都生效
+- [ ] 端到端：手动铸一张 ScoreNFT 走完整状态机（pending → success）
+- [ ] A6 决策写进 JOURNAL，按决策完成对应代码
 - [ ] `scripts/verify.sh` 通过
-- [ ] 端到端重测：手动铸造一次 ScoreNFT（scripts/）→ 走完整条 cron 链路
-- [ ] 手动发起一次"模拟 post-send 失败"→ 日志 CRITICAL，job status failed

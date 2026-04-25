@@ -11,17 +11,31 @@
 
 ---
 
-## ⏭ Next — Phase 6 Pre-tester Gate（3 项，~2 小时）
+## ⏭ Next — Phase 6 Kickoff Sequence
 
-Phase 6 playbook：`playbook/phase-6/overview.md`
+Phase 6 playbook：`playbook/phase-6/overview.md`（已按第三轮 CTO review 重写）
 
-**放 tester 前必修**（Phase 5 severity 分析 + Phase 1-4 回看合集）：
+### 步骤 0：产品决策冻结（和用户对齐，写进 JOURNAL）
 
-- [ ] **A2** — material failed 重试语义（`app/api/mint/material/route.ts`，30-60 分）
-- [ ] **B1** — NFT localStorage 按 user_id 命名空间（`src/lib/nft-cache.ts`，30 分）
-- [ ] **E1** — `/api/health` 暴露 mint_queue 的 failed / stuck / retry / oldest age（30-60 分）
+- [ ] **A6** — `/me` 语义：我铸造的 / 我持有的 / 双分区
+- [ ] **D1** — 主网是否做空投：做 / 不做
+- [ ] **E2** — Semi 登录是否 Phase 6 接入 / 挂 Phase 7
 
-通过 → 部署 → 限定范围 tester 放人 1-2 周
+### 步骤 1：Track C 合约重部署（~1 天，Pre-tester 前一次性完成）
+
+- [ ] C1 ScoreNFT setTokenURI 防覆盖 + 重部署
+- [ ] C2 Deploy 脚本参数化 admin/minter + revoke runbook
+- [ ] C3 Deploy 脚本去测试 mint
+- [ ] C4 TBA 开关删除 + 重部署 Orchestrator
+
+### 步骤 2：Pre-tester Gate（4 项，~3 小时）
+
+- [ ] **G0** 运营就绪检查（balance + cron 5/5 + env 同步 + health + 真实 smoke，15 分）
+- [ ] **A2** material failed 分类重试（`failure_kind: safe_retry / manual_review`，1-2 小时）
+- [ ] **B1** NFT localStorage 按 user_id 隔离（30 分）
+- [ ] **E1** `/api/health` 暴露 mint_queue failed / stuck / retry / oldest age（30-60 分）
+
+通过 → 限定范围 tester 放人 1-2 周
 
 ---
 
