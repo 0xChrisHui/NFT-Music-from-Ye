@@ -1,13 +1,18 @@
 # Track E — 认证 & 观测收口
 
-> **范围**：material health 视图 + Semi OAuth 前端接入 + health 加 Semi 探针 +
+> **📌 E2 决策已冻结 @ 2026-04-25：Semi 登录挂 Phase 7**（`docs/JOURNAL.md`）
+>
+> Phase 6 不等 Semi OAuth。主网首版 Privy-only。E2 挂起到 Phase 7 或更后。
+> E3（health Semi 探针）降级：只实现 `not_configured` 状态占位，Semi 配置到位后再探真 API。
+>
+> **范围**：material health 视图 + ~~Semi OAuth 前端接入~~（挂起）+ health 加 Semi 探针（降级）+
 > Score Decoder 多网关入口 fallback + 文档口径对齐
 >
-> **前置**：E2 依赖 Semi 团队 OAuth 就绪；其余无
+> **前置**：E1 是 Pre-tester gate；其余无
 >
-> **对应 findings**：#15 #24 #26 #27 #28（共 5 项）
+> **对应 findings**：#15 #26 #27 #28（4 项做）+ #24 Semi 前端（deferred-justified）
 >
-> **核心交付物**：线上运营可观测性闭环 + Semi 登录在 OAuth 就绪时一次性接入 + 文档一致性
+> **核心交付物**：线上运营可观测性闭环 + 文档一致性
 
 ---
 

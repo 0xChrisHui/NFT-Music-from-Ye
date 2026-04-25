@@ -1,12 +1,20 @@
 # Track D — 空投闭环（条件性）
 
-> **范围**：admin header 鉴权 + 快照新鲜度 + 触发事务 + failed round 判定 + AirdropNFT metadata
+> **📌 D1 决策已冻结 @ 2026-04-25：主网不做空投**（`docs/JOURNAL.md`）
 >
-> **前置**：D1 产品决策是 gate；D2 无条件做；其余依赖 D1 结果 + Track A0（operator 锁，已升级为 Phase 6 必修）
+> **本 Track 实际范围**：**只做 D2（admin header 鉴权）**，其余 D3/D4/D5 挂起到未来 Phase。
+> cron-job.org 的 `process-airdrop` 定时触发在 Phase 6 完结时停用。
 >
-> **对应 findings**：#4 #10 #11 #12 #25（#5 原 D4 已升级为 Track A0）
+> D3/D4/D5 的详细设计保留在本 playbook 供未来重启参考，但当前状态 = `deferred-justified`。
 >
-> **核心交付物**：按 D1 决策要么做完整空投闭环（可承诺奖励 NFT 主网展示），要么明确挂起并关闭代码入口
+> **前置**：无（D2 独立，不依赖 Track A0）
+>
+> **对应 findings**：#11（D2 做）+ #4 #10 #12 #25（已 deferred）
+>
+> **核心交付物**：
+> - ✅ `/api/airdrop/trigger` 去掉 query token 泄露面（D2）
+> - ✅ cron-job.org 停用 process-airdrop 定时触发
+> - ✅ STATUS / ARCH 明确"空投代码挂起，主网不对外承诺"
 
 ---
 

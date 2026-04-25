@@ -479,12 +479,19 @@ DB miss 时：链上 `tokenURI(tokenId)` → `fetchFromArweave` metadata → 提
 
 ---
 
-## Step A6 — 我的乐谱语义（决策 + 实现）
+## Step A6 — 我的乐谱语义
 
-### 概念简报
-JOURNAL 2026-04-12 决策：`/me = 我铸造的`。当时理由是转手场景极少，不值得增加复杂度。但 review 指出 Phase 4 已经做了空投 + 未来主网转手可能变多，"我铸造的" 语义可能和用户直觉冲突。
+### 📌 决策已冻结 @ 2026-04-25：保持"我铸造的"（选项 1）
 
-**这是产品决策，不是工程偏好**。必须在 kickoff 阶段由用户显式决定，才能执行。
+见 `docs/JOURNAL.md` 2026-04-25 收尾段落 "A6 — /me 语义"。
+
+**实际 Phase 6 工作量 = 0 代码** — 保持现状即"我铸造的"，`/api/me/score-nfts` 继续按 `score_nft_queue.user_id` 查。Finding P14-22 标 `deferred-justified`（理由见 JOURNAL）。
+
+未来若产品方向改变（主网上线后二级市场活跃、社交分享需求出现），可作为独立 Phase 重新评估选项 2/3。届时重启：依赖 Track A3 完成（chain_events 新鲜度）。
+
+### 原决策过程（保留供未来重评参考）
+
+JOURNAL 2026-04-12 决策：`/me = 我铸造的`。当时理由是转手场景极少，不值得增加复杂度。Phase 1-4 回看 P14-22 建议改成"我持有的"，Phase 6 kickoff 复审后维持原决策。
 
 ### A6.0 — 决策 Gate
 

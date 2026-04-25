@@ -117,6 +117,30 @@
 - 无（Phase 4A S3 Semi 前端挂起不算阻塞，Phase 5 走 Privy-only 已绕过）
 - tester 邀请文案 + 反馈收集渠道（微信群 / 表单）由用户主导准备，不算代码阻塞
 
+## 🎯 主网承诺边界（Phase 6 产品决策冻结 @ 2026-04-25）
+
+**主网首版包含**：
+- Privy 邮箱登录（Phase 0-1 就绪）
+- 浏览 + 播放 108 首曲目（Phase 1）
+- 素材收藏 → MaterialNFT 铸造（Phase 0-1）
+- 合奏录制 + 草稿保存（Phase 2）
+- 草稿 → ScoreNFT 铸造（Phase 6 B3 接通）
+- 已铸造乐谱公开回放 + 分享卡（Phase 3）
+- 个人页（"我铸造的"语义，Phase 6 A6 冻结）
+- 艺术家页（Phase 4B）
+
+**主网首版不包含**（Phase 6 D1/E2 决策）：
+- **空投 NFT**（D1=不做）— cron-job.org 停用 process-airdrop 定时，合约保留不触发
+- **Semi 社区钱包登录**（E2=挂 Phase 7）— Phase 4A S0-S2 后端可复用，前端未接
+
+**主网首版不允许**：
+- airdrop cron 定时运行（代码保留，调度器不配置）
+- airdrop trigger 管理端点对外暴露（`/api/airdrop/trigger` 只接受 Bearer token）
+
+**前端关闭的入口**：
+- /artist 页不显示空投进度标记（或显示为"运营内部"）
+- /me 无草稿上链按钮之前路径关闭（Phase 6 B3 接通前）
+
 ## 备注
 
 - 仓库/代号 `ripples-in-the-pond`（本地文件夹仍是 `nft-music`）

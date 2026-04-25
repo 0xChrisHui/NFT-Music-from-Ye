@@ -15,11 +15,14 @@
 
 Phase 6 playbook：`playbook/phase-6/overview.md`（已按第三轮 CTO review 重写）
 
-### 步骤 0：产品决策冻结（和用户对齐，写进 JOURNAL）
+### 步骤 0：产品决策冻结 ✅ 完成（2026-04-25）
 
-- [ ] **A6** — `/me` 语义：我铸造的 / 我持有的 / 双分区
-- [ ] **D1** — 主网是否做空投：做 / 不做
-- [ ] **E2** — Semi 登录是否 Phase 6 接入 / 挂 Phase 7
+- [x] **A6** — `/me` 语义 = **"我铸造的"（保持现状）**
+- [x] **D1** — 主网**不做空投**（D2 admin header 仍做，D3-D5 挂起）
+- [x] **E2** — Semi 登录**挂 Phase 7**（主网首版 Privy-only）
+
+决策详情：`docs/JOURNAL.md` 2026-04-25 收尾段落
+findings 状态更新：`reviews/phase-6-findings-tracker.md`（7 项 deferred-justified/downgraded-accepted）
 
 ### 步骤 1：Track C 合约重部署（~1 天，Pre-tester 前一次性完成）
 

@@ -164,3 +164,44 @@
   - 起因：第一版只有 3 个代码项（A2/B1/E1），没检查 operator 余额 / cron-job.org 状态 / Vercel env 同步 / 真实 smoke。代码修完 ≠ 环境就绪
   - 决定：G0 不写代码但要跑清单（6 项）产出可验证结果，通过才能放人
   - 影响：Pre-tester gate 从 3 项扩 4 项（+15 分钟）
+
+### 2026-04-25 收尾 — Phase 6 Kickoff 产品决策冻结（A6 / D1 / E2）
+
+Phase 6 kickoff 3 个产品决策冻结。后续不允许执行中自然飘移，修改必须走新的 playbook 修订流程。
+
+- **A6 — `/me` 语义：保持"我铸造的"（选项 1）**
+  - 背景：2026-04-12 原决策是"我铸造的"；Phase 1-4 回看 P14-22 建议改成"我持有的"（链上 owner 投影）
+  - 决定：保持现状。理由：
+    1. 当前用户群以创作者视角为主，"我铸造的"语义稳定 3 个月无投诉
+    2. 主网早期 ScoreNFT 转手场景极少（没有二级市场、没有社交分享按钮）
+    3. 改 owner 投影会引入 Track A3 硬依赖 + UI 文案重设计 + chain_events 新鲜度风险
+    4. 若未来真需要，可以作为 Phase 8+ 的独立产品迭代
+  - 影响：
+    - Track A6 工作量 = 10 分钟（只改 JOURNAL 说明）
+    - Finding P14-22 状态 = `deferred-justified`
+    - 不再影响 Track B2.2（/me UI 重设计）
+- **D1 — 主网不做空投**
+  - 背景：Phase 4C 做了 AirdropNFT 合约 + cron 骨架，但 metadata 没做，两轮 review 都提到深层 bug（快照新鲜度、cron 串行、触发事务、failed 判定等）
+  - 决定：主网首版不做空投。理由：
+    1. 空投不是 MVP 必需功能，主网首版价值聚焦"收藏 + 创作 + 铸造"
+    2. 修全套要 1 周（D3-D5），对 MVP 上线时间性价比低
+    3. 未来如果社区需要，可以独立作为新 Phase 规划并重新 review
+  - 影响：
+    - Track D 只做 D2（admin header 鉴权，因 query token 是安全泄露点必修，与空投启用无关）
+    - Track D 工作量从 5-6 天降到 30 分钟
+    - Finding P14-4 / P14-10 / P14-12 / P14-25 状态 = `deferred-justified`
+    - cron-job.org 的 `process-airdrop` 定时触发**在 Phase 6 完结时停用**（保留 URL，不触发）
+    - STATUS "主网承诺边界" + ARCH 空投章节 加注解
+    - 前端（/me /artist 等）不需要空投入口
+- **E2 — Semi 登录挂 Phase 7（不在 Phase 6 接入）**
+  - 背景：Phase 4A S3 自 2026-04-13 挂起，Semi 团队 OAuth 方案至今未就绪
+  - 决定：Phase 6 不等 Semi OAuth。主网首版 Privy-only。理由：
+    1. Semi OAuth 就绪时间不受项目控制
+    2. 主网首版验证的是核心产品循环，登录多源化不是 MVP 门槛
+    3. 已完成的 Phase 4A S0-S2（JWT / 中间件 / auth_identities）100% 可复用
+  - 影响：
+    - Track E2 挂起到 Phase 7 或更后的 Phase
+    - E3（health 加 Semi 探针）降级：只支持 `not_configured` 状态，不探真 API（Semi 配了再探）
+    - Finding P14-24 状态 = `deferred-justified`
+    - STATUS "主网承诺边界" 明确 "主网首版 Privy-only"
+    - Track E5（文档口径对齐）依然要做，把 playbook-4 标清楚 Semi 状态

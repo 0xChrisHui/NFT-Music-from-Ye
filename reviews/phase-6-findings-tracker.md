@@ -21,15 +21,15 @@
 | P14-1 | P1 | failed material mint 被当成功 | Track A2 | open | — |
 | P14-2 | P1 | NFT localStorage 跨账号泄漏 | Track B1 | open | — |
 | P14-3 | P1 | sync-chain-events 单条失败推进 cursor | Track A3 | open | — |
-| P14-4 | P1 | 空投快照无链上同步新鲜度检查 | Track D3 | open | — |
+| P14-4 | P1 | 空投快照无链上同步新鲜度检查 | Track D3 | deferred-justified | D1=不做空投，`docs/JOURNAL.md` 2026-04-25 |
 | P14-5 | P1 | 空投 cron 未确认 tx 时仍发下笔 → 运营钱包锁 | Track **A0** | open | — |
 | P14-6 | P1 | ScoreNFT metadata 可被 MINTER_ROLE 任意覆盖 | Track C1 | open | — |
 | P14-7 | P2 | tracks 无 ISR/cache/error fallback | Track B5 | open | — |
 | P14-8 | P2 | 移动端 fallback 首帧加载桌面音效引擎 | Track B5 | open | — |
 | P14-9 | P2 | 草稿 localStorage 损坏无恢复 | Track B5 | open | — |
-| P14-10 | P2 | 空投触发 3 步非事务 | Track D3 | open | — |
-| P14-11 | P2 | admin 空投用 query token | Track D2 | open | — |
-| P14-12 | P2 | 空投 failed 不阻止 round done / health 无指标 | Track D4 | open | — |
+| P14-10 | P2 | 空投触发 3 步非事务 | Track D3 | deferred-justified | D1=不做空投 |
+| P14-11 | P2 | admin 空投用 query token | Track D2 | open | **仍做**（query token 是安全泄露点，与空投启用无关） |
+| P14-12 | P2 | 空投 failed 不阻止 round done / health 无指标 | Track D4 | deferred-justified | D1=不做空投 |
 | P14-13 | P2 | 主网部署脚本 mint 无 metadata 测试 ScoreNFT | Track C3 | open | — |
 | P14-14 | P2 | TBA 开关是空实现 | Track C4 | open | — |
 | P14-15 | P2 | Score Decoder 入口绑单一网关 | Track E4 | open | — |
@@ -44,11 +44,11 @@
 | P14-19 | P1 | 草稿保存非事务原子 | Track A4 | open | — |
 | P14-20 | P1 | admin/minter 权限分离停留在意图 | Track C2 | open | — |
 | P14-21 | P1 | /score/[tokenId] 无链上灾备路径 | Track A5 | open | — |
-| P14-22 | P1 | 我的乐谱按初始 mint 用户而非 owner（产品决策）| Track A6 | open | — |
+| P14-22 | P1 | 我的乐谱按初始 mint 用户而非 owner（产品决策）| Track A6 | deferred-justified | A6=保持"我铸造的"，`docs/JOURNAL.md` 2026-04-25 |
 | P14-23 | P1 | 草稿铸造前端入口未接上（bug #5）| Track B3 | open | — |
-| P14-24 | P1 | Semi 登录前端未接入 | Track E2 | open（条件）| — |
-| P14-25 | P1 | AirdropNFT 空壳资产 | Track D5 | open（条件）| — |
-| P14-26 | P2 | /api/health 无 Semi 可达性探针 | Track E3 | open | — |
+| P14-24 | P1 | Semi 登录前端未接入 | Track E2 | deferred-justified | E2=挂 Phase 7，`docs/JOURNAL.md` 2026-04-25 |
+| P14-25 | P1 | AirdropNFT 空壳资产 | Track D5 | deferred-justified | D1=不做空投 |
+| P14-26 | P2 | /api/health 无 Semi 可达性探针 | Track E3 | downgraded-accepted | E2 挂 Phase 7，E3 只实现 `not_configured` 状态占位，Semi 配了再探真 API |
 | P14-27 | P2 | material failed/stuck 无运营视图 | Track E1 | open（Pre-tester）| — |
 | P14-28 | P2 | playbook 与 STATUS Semi 口径分裂 | Track E5 | open | — |
 | P14-29 | P2 | 岛屿快速连点音频叠加 | Track B4 | open | — |
@@ -75,24 +75,29 @@
 
 ---
 
-## 产品决策 Gate（Kickoff 必须冻结）
+## 产品决策 Gate（Kickoff 已冻结 2026-04-25）
 
 | Gate | 选项 | 决策日期 | 决策内容 | 影响的 step |
 |---|---|---|---|---|
-| **A6** `/me` 语义 | 我铸造的 / 我持有的 / 双分区 | 待定 | 待定 | Track A6 + B2.2 |
-| **D1** 主网是否做空投 | 做 / 不做 | 待定 | 待定 | Track D 全体 |
-| **E2** Semi 登录是否 Phase 6 接入 | 接 / 挂 Phase 7 | 待定 | 待定 | Track E2 |
+| **A6** `/me` 语义 | 我铸造的 / 我持有的 / 双分区 | 2026-04-25 | **保持"我铸造的"（选项 1）** | A6 = 10 分钟说明；P14-22 → deferred-justified |
+| **D1** 主网是否做空投 | 做 / 不做 | 2026-04-25 | **不做** | D2 单做；D3-D5 挂起；P14-4/10/12/25 → deferred-justified |
+| **E2** Semi 登录是否 Phase 6 接入 | 接 / 挂 Phase 7 | 2026-04-25 | **挂 Phase 7（Privy-only）** | E2 挂起；E3 降级；P14-24 → deferred-justified |
 
-决策在 `docs/JOURNAL.md` 2026-04-XX 条目冻结。
+决策冻结 @ `docs/JOURNAL.md` 2026-04-25 收尾段落。
 
 ---
 
 ## 统计
 
 - **总 findings**：29（Phase 1-4 + Phase 5 合集）
-- **Phase 6 playbook review 新增**：11（P0×3 + P1×6 + P2×2）
-- **需要产品决策 gate**：3（A6 / D1 / E2）
-- **总 action items**：43+
+- **Phase 6 playbook review 新增**：11（P0×3 + P1×6 + P2×2）已 fixed（playbook 层）
+- **产品决策 gate**：3（A6 / D1 / E2）**全部冻结** @ 2026-04-25
+- **Kickoff 冻结后状态分布**：
+  - `open`（需代码实现）：22 项
+  - `fixed`（playbook 层）：11 项
+  - `deferred-justified`（决策挂起）：6 项（P14-4 / 10 / 12 / 22 / 24 / 25）
+  - `downgraded-accepted`（降级）：1 项（P14-26）
+- **Phase 6 实际代码工作量**：22 open items（下界，取决于 B2 UI 重设计深度）
 
 ## Phase 6 完结验收
 
