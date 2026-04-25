@@ -8,11 +8,11 @@ import { getDrafts, removeDraft } from '@/src/lib/draft-store';
 type FavoriteStatus = 'idle' | 'loading' | 'success' | 'error';
 
 /**
- * 爱心收藏 hook — 决策 16 状态机
+ * 爱心收藏 hook — 悲观更新
  *
  * 点击爱心 →
  *   未登录 → 触发 Privy 登录 → 登录成功后自动完成收藏
- *   已登录 → 直接铸造 + 上传草稿
+ *   已登录 → loading → API 成功才变 success（红心）；失败回退 error 并 3s 后自动归 idle
  */
 export function useFavorite(
   tokenId: number,
@@ -26,33 +26,32 @@ export function useFavorite(
   useEffect(() => { onMintedRef.current = onMinted; }, [onMinted]);
 
   const doFavorite = useCallback(async () => {
-    // 乐观更新：立刻变红心，失败不回退（后端静默重试）
-    setStatus('success');
-    onMintedRef.current?.(tokenId);
+    setStatus('loading');
 
     try {
       const token = await getAccessToken();
       if (!token) throw new Error('无法获取 token');
 
-      // 1. 铸造素材 NFT
+      // 1. 铸造素材 NFT（后端用稳定 idempotencyKey 防并发重复）
       const mintRes = await fetch('/api/mint/material', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          tokenId,
-          idempotencyKey: `mint-${tokenId}-${Date.now()}`,
-        }),
+        body: JSON.stringify({ tokenId }),
       });
 
       // 409 = 已铸造过，视为成功
       if (!mintRes.ok && mintRes.status !== 409) {
-        throw new Error('铸造请求失败');
+        throw new Error(`铸造请求失败: ${mintRes.status}`);
       }
 
-      // 2. 尝试上传该 track 的草稿（如有）
+      // API 确认入队后才推进 UI 到 success
+      setStatus('success');
+      onMintedRef.current?.(tokenId);
+
+      // 2. 尝试上传该 track 的草稿（如有）— 失败不影响收藏成功
       const drafts = getDrafts();
       const draft = drafts.find((d) => d.trackId === trackId);
       if (draft) {
@@ -68,8 +67,10 @@ export function useFavorite(
         }
       }
     } catch (err) {
-      // 不回退红心，不告诉用户——开发者从日志排查
-      console.error('[favorite] 后端失败，需排查:', err);
+      console.error('[favorite] 收藏失败:', err);
+      setStatus('error');
+      // 3 秒后回到 idle，让用户能重试
+      setTimeout(() => setStatus((s) => (s === 'error' ? 'idle' : s)), 3000);
     }
   }, [getAccessToken, tokenId, trackId]);
 

@@ -11,15 +11,34 @@
 
 ---
 
-## ⏭ Next — Phase 5.5 Tester 前必修（1 个 bug，只剩用户操作）
+## ⏭ Next — Phase 5.5 Tester 前必修（只剩 1 件用户操作）
 
-详细 bug 背景：`reviews/2026-04-24-phase-5-s5-smoke-test.md`
+详细 bug 背景：`reviews/2026-04-24-phase-5-s5-smoke-test.md` + `reviews/2026-04-25-phase-5-strict-cto-review.md`
 
 - **Bug #3** — operator 钱包 faucet 补到 0.1+ ETH（OP Sepolia，15 分钟，用户操作）
 
-已清（commit `1bb1b05`）：bug #2 LoginButton / bug #6 Rate limit 误判确认正常 / Codex ➊➋➌ post-send rollback / 并发 CAS / middleware 观测 / check-balance 状态枚举
+**已清（第一轮 commit `1bb1b05`）**：bug #2 LoginButton / bug #6 Rate limit 误判 / Codex ➊➋➌ post-send rollback / 并发 CAS / middleware 观测 / check-balance 状态枚举
 
-**Bug #3 解除 → 上 10-20 人 tester 反馈轮**（1-2 周收集反馈作为 Phase 6 输入）
+**已清（第二轮 Codex 严格 review，本次 commit）**：bug #7 material mint 并发重复入队（稳定 idempotencyKey）/ bug #8 爱心 UI 悲观回退
+
+**Bug #3 解除 → 开放限定范围 tester**（素材收藏 + 个人页 + artist；不含草稿铸造 / 空投）
+
+---
+
+## ⏭⏭ Phase 6 启动前必修（草稿铸造按钮 UI = bug #5 接通前必须先修）
+
+来源：`reviews/2026-04-25-phase-5-strict-cto-review.md`
+
+- **ScoreNFT cron post-send rollback**（和 material/airdrop 同问题，第一轮漏修 score）
+  - `app/api/cron/process-score-queue/steps-chain.ts:58-76` stepMintOnchain 的 write-then-DB 要严格区分
+- **ScoreNFT claim RPC 加 durable lease**（事务外别的 cron 实例可抢同行）
+  - `supabase/migrations/phase-3/hotfix/015_claim_score_queue_rpc.sql` 需要 locked_at / processing 状态
+- **ScoreNFT receipt pending 不算失败**（对比 material 的正确处理）
+  - `steps-chain.ts:83-88` getTransactionReceipt 抛错应 return 等下次，不该递增 retry_count
+- **setTokenURI 拆步**（Phase 5 D2 要求，当前 waitForTransactionReceipt 阻塞 10s）
+  - 加 `uri_tx_hash` 字段，无 hash 发 + 存，有 hash 查 receipt
+- **Bug #5 草稿铸造按钮 UI**（ScoreNFT cron 四连修完后做）
+  - `DraftCard.tsx` 加铸造按钮，`jam-source.ts` 加 mintScore 函数
 
 ## ⏭⏭ 之后
 

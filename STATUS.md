@@ -6,15 +6,16 @@
 
 ## 当前阶段
 
-**Phase**: Phase 5 — 测试网公开版 ✅ S0-S5 完成（10/12 冒烟测试通过）
-**进度**: **S0-S5 完成**，等测试前必修 3 项（bug #2/#3/#6）完成后上 tester
+**Phase**: Phase 5 — 测试网部署完成（未达 playbook 12/12 完整收口，B9 乐谱铸造延后 Phase 6）
+**进度**: 部署上线 + Review 修复完成，剩 1 件用户操作（bug #3 faucet）即可开放限定范围 tester
 **playbook**: `playbook/phase-5-testnet-public.md`
+**tester 范围**：仅素材收藏链路 + 个人页 + artist 页；**不含草稿铸造（bug #5）+ 空投**
 
 ## 当前进度
 
-**做到哪**: Phase 5 整条链路已部署上线 + Review P0 修复已 commit `1bb1b05`
-**下一步**: bug #3 operator 钱包 faucet → 10-20 人 tester 反馈轮 → Phase 6 UI 重设计 → Phase 7 OP 主网
-**剩余**: Phase 5.5（tester 反馈轮）→ Phase 6（UI 重设计）→ Phase 7（OP 主网）
+**做到哪**: Phase 5 线上 + 两轮 Review 合计 11 项代码修复完成（含第二轮严格 CTO review 的 P0 material 并发 + UI 回退）
+**下一步**: bug #3 operator 钱包 faucet → 限定范围 tester 反馈轮 → Phase 6 UI 重设计前先修 ScoreNFT cron P0 四连 → Phase 7 OP 主网
+**剩余**: Phase 5.5（tester 反馈轮）→ Phase 6（UI 重设计 + ScoreNFT cron 修复）→ Phase 7（OP 主网）
 
 ### Phase 5 交付物（2026-04-25 收口）
 
@@ -24,8 +25,10 @@
 - Arweave：Turbo 钱包环境变量化（TURBO_WALLET_JWK）
 - 限流：middleware + Upstash Redis ✅ 线上验证 20/30 并发 → 20 次 429（2026-04-25 确认正常工作）
 - Review 修复 commit `1bb1b05`：post-send rollback × 2 + markSuccess 改序 + 并发 CAS + 日志观测 + LoginButton + check-balance 状态枚举
+- 第二轮严格 CTO review 修复（本次 commit）：material mint 稳定 idempotencyKey 防并发 + useFavorite 改悲观回退 UI
 - 冒烟测试文档：`reviews/2026-04-24-phase-5-s5-smoke-test.md`（bug #6 部分已修订为误判）
 - 完成 review：`reviews/2026-04-24-phase-5-completion-review.md`（Codex 出）
+- 严格 CTO review：`reviews/2026-04-25-phase-5-strict-cto-review.md`（Codex 第二轮，含 Phase 6 前置 bug 清单）
 
 ### 续做指南（下次会话第一件事读这段）
 

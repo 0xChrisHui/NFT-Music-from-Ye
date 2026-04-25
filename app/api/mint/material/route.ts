@@ -16,47 +16,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '未登录' }, { status: 401 });
     }
 
-    // 2. 解析请求体
+    // 2. 解析请求体（只认 tokenId，idempotencyKey 后端自己合成稳定值防并发）
     const body = await req.json();
-    const { tokenId, idempotencyKey } = body as {
-      tokenId: number;
-      idempotencyKey: string;
-    };
+    const { tokenId } = body as { tokenId: number };
 
-    if (!tokenId || !idempotencyKey) {
-      return NextResponse.json({ error: '缺少 tokenId 或 idempotencyKey' }, { status: 400 });
+    if (!tokenId || !Number.isInteger(tokenId)) {
+      return NextResponse.json({ error: '缺少或非法 tokenId' }, { status: 400 });
     }
 
     const userId = auth.userId;
 
-    // 3. 同一用户 + 同一素材不重复铸造
+    // 3. 同一用户 + 同一素材不重复铸造（success 已存在 → 明确 409）
     const { data: alreadyMinted } = await supabaseAdmin
       .from('mint_events')
       .select('id')
       .eq('user_id', userId)
       .eq('token_id', tokenId)
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (alreadyMinted) {
       return NextResponse.json({ error: '你已经铸造过这个素材', alreadyMinted: true }, { status: 409 });
     }
 
-    // 也检查队列里是否已有 pending/minting 的请求
-    const { data: alreadyQueued } = await supabaseAdmin
-      .from('mint_queue')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('token_id', tokenId)
-      .in('status', ['pending', 'minting_onchain'])
-      .limit(1)
-      .single();
+    // 4. 合成稳定 idempotencyKey — 防止并发重复入队的核心
+    // 靠 mint_queue UNIQUE(idempotency_key) 把并发两次收藏压到一次插入
+    const idempotencyKey = `mint-${userId}-${tokenId}`;
 
-    if (alreadyQueued) {
-      return NextResponse.json({ result: 'ok', mintId: alreadyQueued.id });
-    }
-
-    // 5. 直接插入，靠 unique(idempotency_key) 做幂等（修复：并发安全）
     const { data: mint, error: mintError } = await supabaseAdmin
       .from('mint_queue')
       .insert({
@@ -70,21 +56,21 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (mintError) {
-      // unique 冲突 = 重复请求，查出已有记录返回
+      // unique 冲突 = 已有同 (user,token) 的 job — 查出返回（pending/minting/failed 都复用）
       if (mintError.code === '23505') {
         const { data: existing } = await supabaseAdmin
           .from('mint_queue')
-          .select('id')
+          .select('id, status')
           .eq('idempotency_key', idempotencyKey)
           .single();
         if (existing) {
-          return NextResponse.json({ result: 'ok', mintId: existing.id });
+          return NextResponse.json({ result: 'ok', mintId: existing.id, status: existing.status });
         }
       }
       throw mintError;
     }
 
-    return NextResponse.json({ result: 'ok', mintId: mint.id });
+    return NextResponse.json({ result: 'ok', mintId: mint.id, status: 'pending' });
   } catch (err) {
     console.error('POST /api/mint/material error:', err);
     return NextResponse.json(
