@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
 import { verifyCronSecret } from '@/src/lib/auth/cron-auth';
+import { acquireOpLock, releaseOpLock } from '@/src/lib/chain/operator-lock';
 import { tryConfirmMinting, trySendNew } from './steps';
 
 /**
@@ -10,13 +12,20 @@ import { tryConfirmMinting, trySendNew } from './steps';
  *
  * 每次调用优先完成 minting_onchain，再抢新 pending。
  * 一次只处理一条（nonce 串行要求）。
+ *
+ * Phase 6 A0：入口拿运营钱包全局锁，避免和 score / airdrop cron nonce race。
  */
 export async function GET(req: NextRequest) {
-  try {
-    if (!verifyCronSecret(req)) {
-      return NextResponse.json({ error: '无效的 secret' }, { status: 401 });
-    }
+  if (!verifyCronSecret(req)) {
+    return NextResponse.json({ error: '无效的 secret' }, { status: 401 });
+  }
 
+  const holder = `mint-queue-${randomUUID()}`;
+  if (!(await acquireOpLock(holder))) {
+    return NextResponse.json({ result: 'busy', processed: 0 });
+  }
+
+  try {
     // 步骤 1：优先完成已发交易的 minting_onchain
     const confirmed = await tryConfirmMinting();
     if (confirmed) return NextResponse.json(confirmed);
@@ -32,5 +41,7 @@ export async function GET(req: NextRequest) {
       { error: '处理失败' },
       { status: 500 },
     );
+  } finally {
+    await releaseOpLock(holder);
   }
 }

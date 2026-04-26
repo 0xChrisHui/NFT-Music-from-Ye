@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
 import { verifyCronSecret } from '@/src/lib/auth/cron-auth';
+import { acquireOpLock, releaseOpLock } from '@/src/lib/chain/operator-lock';
 import { supabaseAdmin } from '@/src/lib/supabase';
 import type { ScoreMintQueueRow, ScoreMintStatus } from '@/src/types/jam';
 import { stepUploadEvents, stepUploadMetadata } from './steps-upload';
@@ -25,15 +27,21 @@ import { stepMintOnchain, stepSetTokenUri } from './steps-chain';
 const MAX_RETRY = 3;
 
 export async function GET(req: NextRequest) {
+  // 1. 验证 cron secret（header 优先，兼容 query param）
+  if (!verifyCronSecret(req)) {
+    return NextResponse.json({ error: '无效的 secret' }, { status: 401 });
+  }
+
+  // Phase 6 A0：入口拿运营钱包全局锁，避免和 mint / airdrop cron nonce race
+  const holder = `score-queue-${randomUUID()}`;
+  if (!(await acquireOpLock(holder))) {
+    return NextResponse.json({ result: 'busy', processed: 0 });
+  }
+
   let claimedId: string | null = null;
   let claimedRetry = 0;
 
   try {
-    // 1. 验证 cron secret（header 优先，兼容 query param）
-    if (!verifyCronSecret(req)) {
-      return NextResponse.json({ error: '无效的 secret' }, { status: 401 });
-    }
-
     // 2. 原子抢单：FOR UPDATE SKIP LOCKED 保证并发安全
     const { data: rows, error: queryErr } = await supabaseAdmin
       .rpc('claim_score_queue_job');
@@ -113,5 +121,7 @@ export async function GET(req: NextRequest) {
       { error: '处理失败', message: msg },
       { status: 500 },
     );
+  } finally {
+    await releaseOpLock(holder);
   }
 }

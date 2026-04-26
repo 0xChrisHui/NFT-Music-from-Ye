@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { verifyCronSecret } from "@/src/lib/auth/cron-auth";
+import { acquireOpLock, releaseOpLock } from "@/src/lib/chain/operator-lock";
 import { supabaseAdmin } from "@/src/lib/supabase";
 import { operatorWalletClient, publicClient } from "@/src/lib/chain/operator-wallet";
 import { AIRDROP_NFT_ADDRESS, AIRDROP_NFT_ABI } from "@/src/lib/chain/contracts";
@@ -19,6 +21,12 @@ const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a
 export async function GET(req: NextRequest) {
   if (!verifyCronSecret(req)) {
     return NextResponse.json({ error: "无效的 secret" }, { status: 401 });
+  }
+
+  // Phase 6 A0：入口拿运营钱包全局锁，避免和 mint / score cron nonce race
+  const holder = `airdrop-${randomUUID()}`;
+  if (!(await acquireOpLock(holder))) {
+    return NextResponse.json({ result: "busy" });
   }
 
   try {
@@ -58,6 +66,8 @@ export async function GET(req: NextRequest) {
       { error: "处理空投失败", detail: msg },
       { status: 500 },
     );
+  } finally {
+    await releaseOpLock(holder);
   }
 }
 
