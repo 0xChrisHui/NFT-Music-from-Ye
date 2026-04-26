@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useMintScore } from '@/src/hooks/useMintScore';
 
 /** 剩余毫秒 → "Xh Ym" */
 function formatRemaining(ms: number): string {
@@ -11,16 +12,25 @@ function formatRemaining(ms: number): string {
 }
 
 /**
- * DraftCard — 草稿卡片
- * 格式：深渊 - #01 - 20 音符 | 23h 45m
+ * DraftCard — 草稿卡片（Phase 6 B3：加铸造按钮）
+ *
+ * 仅 server 草稿（有 pendingScoreId）显示按钮；本地草稿无按钮（等 me/page 自动上传）
+ * 已过期 → 按钮变"已过期"灰色禁用（前端 UI 例外，因 ops 也无法补救硬过期）
+ * 点击 → 立即变"铸造中..."（乐观 UI；memory: feedback/optimistic_ui_with_rollback）
  */
-export default function DraftCard({ title, expiresAt }: {
+export default function DraftCard({
+  title,
+  expiresAt,
+  pendingScoreId,
+}: {
   title: string;
   expiresAt: string;
+  pendingScoreId?: string;
 }) {
   const [remaining, setRemaining] = useState(() =>
     new Date(expiresAt).getTime() - Date.now(),
   );
+  const { state, mint } = useMintScore();
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -28,6 +38,9 @@ export default function DraftCard({ title, expiresAt }: {
     }, 60_000);
     return () => clearInterval(id);
   }, [expiresAt]);
+
+  const expired = remaining <= 0;
+  const canMint = !!pendingScoreId && !expired && state === 'idle';
 
   return (
     <div className="rounded-lg border border-white/10 bg-white/5 p-4">
@@ -42,6 +55,28 @@ export default function DraftCard({ title, expiresAt }: {
           {formatRemaining(remaining)}
         </span>
       </div>
+
+      {pendingScoreId && (
+        <div className="mt-3 flex justify-end">
+          {state === 'queued' ? (
+            <span className="text-xs text-emerald-400/70">铸造中...</span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => canMint && mint(pendingScoreId)}
+              disabled={!canMint}
+              className={[
+                'rounded-full border px-4 py-1 text-xs transition-all',
+                canMint
+                  ? 'border-rose-400/40 text-rose-400 hover:bg-rose-400/10'
+                  : 'cursor-not-allowed border-white/10 text-white/30',
+              ].join(' ')}
+            >
+              {expired ? '已过期' : '铸造成乐谱 NFT'}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

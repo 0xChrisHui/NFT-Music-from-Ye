@@ -19,6 +19,8 @@ interface DisplayDraft {
   key: string;
   title: string;
   expiresAt: string;
+  /** Phase 6 B3: server 草稿带 pendingScoreId，DraftCard 据此显示铸造按钮；本地草稿不带 */
+  pendingScoreId?: string;
 }
 
 /**
@@ -88,6 +90,7 @@ export default function MePage() {
           key: `server-${s.id}`,
           title: `${s.trackTitle} - #${String(s.seq).padStart(2, '0')} - ${s.eventCount} 音符`,
           expiresAt: s.expiresAt,
+          pendingScoreId: s.id,
         })),
         ...remaining.map((d, i) => ({
           key: `local-${d.trackId}`,
@@ -168,7 +171,12 @@ export default function MePage() {
             </h2>
             <div className="grid gap-3">
               {drafts.map((d) => (
-                <DraftCard key={d.key} title={d.title} expiresAt={d.expiresAt} />
+                <DraftCard
+                  key={d.key}
+                  title={d.title}
+                  expiresAt={d.expiresAt}
+                  pendingScoreId={d.pendingScoreId}
+                />
               ))}
             </div>
           </section>

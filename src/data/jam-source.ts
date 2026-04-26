@@ -7,6 +7,7 @@ import type {
   MyScoresResponse,
   OwnedScoreNFT,
   MyScoreNFTsResponse,
+  MintScoreResponse,
 } from '@/src/types/jam';
 
 /**
@@ -56,6 +57,26 @@ export async function fetchMyScoreNFTs(token: string): Promise<OwnedScoreNFT[]> 
   if (!res.ok) return [];
   const data: MyScoreNFTsResponse = await res.json();
   return data.scoreNfts;
+}
+
+/** Phase 6 B3：草稿铸造 ScoreNFT 的入口 — 入队后 cron 5 步状态机异步处理 */
+export async function mintScore(
+  token: string,
+  pendingScoreId: string,
+): Promise<MintScoreResponse> {
+  const res = await fetch('/api/mint/score', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ pendingScoreId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: '铸造请求失败' }));
+    throw new Error(err.error ?? '铸造请求失败');
+  }
+  return res.json();
 }
 
 export async function fetchScorePreview(
