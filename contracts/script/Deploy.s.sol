@@ -5,29 +5,39 @@ import "forge-std/Script.sol";
 import "../src/MaterialNFT.sol";
 
 /**
- * Phase 1 部署脚本 — 自定义 MaterialNFT
+ * Phase 6 C2 部署脚本 — MaterialNFT，admin / minter 分离
  *
- * deployer = DEFAULT_ADMIN_ROLE（管理角色 + 更新 URI）
- * minter 参数 = MINTER_ROLE（运营钱包，调 mint）
+ * 主网权限模型见 DeployScore.s.sol 注释。测试网兼容：env 缺省时回退 deployer。
  *
  * 用法：
- * forge script script/Deploy.s.sol --rpc-url $ALCHEMY_RPC_URL \
- *   --private-key $OPERATOR_PRIVATE_KEY --broadcast -vv
+ *   cd contracts
+ *   forge script script/Deploy.s.sol \
+ *     --rpc-url $ALCHEMY_RPC_URL --broadcast -vv
  */
 contract Deploy is Script {
     function run() external {
-        address minter = msg.sender;
+        uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+        address deployer = vm.addr(deployerKey);
+        address admin = vm.envOr("ADMIN_ADDRESS", deployer);
+        address minter = vm.envOr("MINTER_ADDRESS", deployer);
 
-        vm.startBroadcast();
+        vm.startBroadcast(deployerKey);
 
         MaterialNFT nft = new MaterialNFT(
             "https://placeholder.ripples/{id}.json",
             minter
         );
 
-        console.log("MaterialNFT deployed at:", address(nft));
-        console.log("Minter (MINTER_ROLE):", minter);
+        if (admin != deployer) {
+            nft.grantRole(nft.DEFAULT_ADMIN_ROLE(), admin);
+            nft.revokeRole(nft.DEFAULT_ADMIN_ROLE(), deployer);
+        }
 
         vm.stopBroadcast();
+
+        console.log("MaterialNFT:", address(nft));
+        console.log("Deployer:   ", deployer);
+        console.log("Admin:      ", admin);
+        console.log("Minter:     ", minter);
     }
 }

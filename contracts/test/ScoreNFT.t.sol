@@ -82,17 +82,19 @@ contract ScoreNFTTest is Test {
         assertEq(nft.tokenURI(id), uri);
     }
 
-    function testSetTokenURIOverwriteAllowed() public {
-        // cron 发生重试时可能重复写，行为应该是"以最后一次为准"
+    function testSetTokenURICannotOverwrite() public {
+        // Phase 6 D-C2：URI 首写一次永久不可改，防 MINTER_ROLE 私钥泄露后改 metadata
         vm.prank(minter);
         uint256 id = nft.mint(user);
 
-        vm.startPrank(minter);
+        vm.prank(minter);
         nft.setTokenURI(id, "ar://first");
-        nft.setTokenURI(id, "ar://second");
-        vm.stopPrank();
 
-        assertEq(nft.tokenURI(id), "ar://second");
+        vm.prank(minter);
+        vm.expectRevert("ScoreNFT: URI already set");
+        nft.setTokenURI(id, "ar://second");
+
+        assertEq(nft.tokenURI(id), "ar://first", "first URI must persist");
     }
 
     function testSetTokenURIRevertsForNonMinter() public {

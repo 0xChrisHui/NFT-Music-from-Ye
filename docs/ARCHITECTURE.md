@@ -113,6 +113,10 @@
 - TBA 里"装着"几个 MaterialNFT (ERC-1155)：1 份底曲 + N 份音效。这些是**子 NFT**
 - ScoreNFT 转手 → TBA 跟着转手 → 子 NFT 跟着转手
 
+> ⚠️ Phase 6 D-C3 修订：**TBA 当前未实装**（见决策 7）。
+> 当前 ScoreNFT 作为独立 ERC-721 存在，回放完全自包含，不依赖 TBA。
+> 上述母子结构是未来扩展形态，真做时必须新部署 MintOrchestrator。
+
 **澄清两个常见误解**：
 1. **封面图不是单独的 NFT**——它是 ScoreNFT 的视觉外观（PNG 文件），不是一个独立 token
 2. **乐谱不是子 NFT**——乐谱是一段 events JSON，描述"哪个键在第几毫秒按下、用了哪个 sound"。它**就是**母 NFT 的内容，不是装在母 NFT 里的另一个 token
@@ -125,9 +129,15 @@
 
 `pending_scores` 24h 过期不影响已铸造乐谱的回放——铸造时数据已被复制到 `mint_events.score_data`。
 
-### 决策 7：ERC-6551 设 fallback 开关
+### 决策 7：ERC-6551 TBA 当前未实装（Phase 6 D-C3 修订）
 
-ERC-6551 是未定稿标准，是最大技术赌注。代码中 TBA 逻辑隔离到可关闭模块。如果标准变更或实现有 bug，乐谱 NFT 退化为普通 ERC-721，核心体验不受影响。
+**原 Phase 3 设计**：MintOrchestrator 内置 `setTbaEnabled` 开关 + `_maybeCreateTba` 空钩子，作为未来 ERC-6551 接入点。理由是"标准未定稿，留扩展点"。
+
+**Phase 6 修订**：删除该开关与空钩子。Solidity 合约部署后代码不可改 → 翻 `setTbaEnabled(true)` 永远不会产生新行为，留着只会误导后继者认为"已就绪可一键开启"。
+
+**未来若要启用 ERC-6551 TBA**，必须**新部署 MintOrchestrator** 或采用 proxy 升级模式，不能通过现有合约的开关开启。
+
+乐谱仍以普通 ERC-721 形态存在，回放数据自包含（决策 6 的 4 层冗余），不依赖 TBA 即可完整使用。
 
 ### 决策 8：所有"原料资源"预上传 Arweave + 复用
 
@@ -271,8 +281,8 @@ idle → [点击爱心]
 - `external_url` 指向公开回放页 `/score/[tokenId]`，分享时微信/Twitter 自动展示封面
 
 ### MintOrchestrator
-- 编排合约：一次调用完成 ScoreNFT.mint + ERC-6551 TBA 创建 + 素材 NFT 转入 TBA
-- ERC-6551 fallback：TBA 模块可一键关闭，退化为普通 ERC-721
+- 编排合约：薄壳，唯一职责是 `mintScore` → `ScoreNFT.mint`
+- ERC-6551 TBA 当前未实装（决策 7 Phase 6 修订）：未来需要时新部署本合约或走 proxy 升级
 
 ---
 
@@ -474,7 +484,7 @@ Patatap spike ✅ / 首页 = 全屏乐器 + 岛屿群 / 无感录制（播放即
 | Mint UI | 乐观 UI | 等链上确认 | 用户秒级反馈 |
 | 封面 | HashLips 预生成 + 复用 | 每张独一无二 | 永远不会用完 |
 | 乐谱数据 | mint_events 自包含 | 外键依赖 pending_scores | 数据可永久回放 |
-| TBA | ERC-6551 + fallback 开关 | 强制使用 ERC-6551 | 标准未定稿的赌注隔离 |
+| TBA | ERC-6551 当前未实装 | 强制使用 ERC-6551 | 决策 7 Phase 6 修订 |
 | 缓存 | ISR tracks | SSR | DB 故障时浏览可用 |
 | 退出 | 用户自付 Gas + Score Decoder | 关站 | 兑现永久可复现 |
 | Patatap | Phase 2 前 1 天 spike ✅ | 直接集成 | 2014 年库的集成风险隔离 |

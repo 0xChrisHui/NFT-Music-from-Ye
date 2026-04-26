@@ -5,22 +5,22 @@ import "forge-std/Script.sol";
 import "../src/AirdropNFT.sol";
 
 /**
- * Phase 4 S6 部署脚本 — AirdropNFT 到 OP Sepolia
+ * Phase 6 C2 部署脚本 — AirdropNFT，admin / minter 分离
  *
- * deployer = operator，同时拿 DEFAULT_ADMIN_ROLE + MINTER_ROLE
- * 空投由 cron 直接调 AirdropNFT.mint()，不走 Orchestrator
+ * 主网权限模型见 DeployScore.s.sol 注释。
+ * 注意：Phase 6 D1 决策 = 主网首版不做空投；该合约保留但 cron 停用。
  *
- * 用法（在 contracts/ 目录下）：
- * forge script script/DeployAirdropNFT.s.sol \
- *   --rpc-url %ALCHEMY_RPC_URL% \
- *   --private-key %OPERATOR_PRIVATE_KEY% \
- *   --broadcast -vv
+ * 用法：
+ *   cd contracts
+ *   forge script script/DeployAirdropNFT.s.sol \
+ *     --rpc-url $ALCHEMY_RPC_URL --broadcast -vv
  */
 contract DeployAirdropNFT is Script {
     function run() external {
-        // 💭 为什么不用 msg.sender：broadcast 前 msg.sender 是 Foundry 默认地址，不是私钥地址
-        uint256 deployerKey = vm.envUint("OPERATOR_PRIVATE_KEY");
-        address minter = vm.addr(deployerKey);
+        uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+        address deployer = vm.addr(deployerKey);
+        address admin = vm.envOr("ADMIN_ADDRESS", deployer);
+        address minter = vm.envOr("MINTER_ADDRESS", deployer);
 
         vm.startBroadcast(deployerKey);
 
@@ -30,11 +30,18 @@ contract DeployAirdropNFT is Script {
             minter
         );
 
-        console.log("AirdropNFT deployed at:", address(nft));
-        console.log("Name:  ", nft.name());
-        console.log("Symbol:", nft.symbol());
-        console.log("Minter:", minter);
+        if (admin != deployer) {
+            nft.grantRole(nft.DEFAULT_ADMIN_ROLE(), admin);
+            nft.revokeRole(nft.DEFAULT_ADMIN_ROLE(), deployer);
+        }
 
         vm.stopBroadcast();
+
+        console.log("AirdropNFT:", address(nft));
+        console.log("Name:      ", nft.name());
+        console.log("Symbol:    ", nft.symbol());
+        console.log("Deployer:  ", deployer);
+        console.log("Admin:     ", admin);
+        console.log("Minter:    ", minter);
     }
 }

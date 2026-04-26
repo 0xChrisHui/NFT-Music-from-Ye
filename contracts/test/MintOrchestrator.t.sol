@@ -15,7 +15,9 @@ import "../src/MintOrchestrator.sol";
  * 4. operator 调 orchestrator.mintScore(user) → 拿到 tokenId
  * 5. 验证 ScoreNFT.ownerOf(tokenId) == user
  *
- * 也覆盖：权限正反 + tbaEnabled toggle + 钩子空时两种状态都能 mint
+ * 也覆盖：权限正反 + 构造参数校验
+ *
+ * Phase 6 D-C3：TBA 开关 + 钩子已删除（参见 MintOrchestrator.sol 注释）
  */
 contract MintOrchestratorTest is Test {
     ScoreNFT nft;
@@ -88,47 +90,6 @@ contract MintOrchestratorTest is Test {
         vm.expectRevert();
         freshOrch.mintScore(user);
         vm.stopPrank();
-    }
-
-    // ───────── TBA 开关 ─────────
-
-    function testTbaEnabledDefaultsFalse() public view {
-        assertFalse(orchestrator.tbaEnabled(), "TBA must default to false");
-    }
-
-    function testSetTbaEnabledByAdmin() public {
-        vm.prank(deployer);
-        orchestrator.setTbaEnabled(true);
-        assertTrue(orchestrator.tbaEnabled());
-
-        vm.prank(deployer);
-        orchestrator.setTbaEnabled(false);
-        assertFalse(orchestrator.tbaEnabled());
-    }
-
-    function testSetTbaEnabledRevertsForNonAdmin() public {
-        vm.prank(outsider);
-        vm.expectRevert();
-        orchestrator.setTbaEnabled(true);
-    }
-
-    function testMintScoreWorksWhenTbaEnabled() public {
-        // 钩子目前是空的，开 / 关都应该能 mint 成功
-        vm.prank(deployer);
-        orchestrator.setTbaEnabled(true);
-
-        vm.prank(deployer);
-        uint256 id = orchestrator.mintScore(user);
-        assertEq(id, 1);
-        assertEq(nft.ownerOf(id), user);
-    }
-
-    function testMintScoreWorksWhenTbaDisabled() public {
-        // 默认 false 状态
-        vm.prank(deployer);
-        uint256 id = orchestrator.mintScore(user);
-        assertEq(id, 1);
-        assertEq(nft.ownerOf(id), user);
     }
 
     // ───────── 构造检查 ─────────

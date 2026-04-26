@@ -16,12 +16,13 @@ interface IScoreNFT {
  *
  * 设计要点：
  * - 自身不存 NFT，只是薄壳：mintScore 转调 ScoreNFT.mint
- * - MINTER_ROLE 控制谁能调 mintScore（S5 cron 用 operator 私钥调）
- * - tbaEnabled 默认 false + 空 _maybeCreateTba 钩子
- *   playbook 冻结决策 D1：保留扩展点但不写真实 ERC-6551 代码
- *   Phase 4+ 真要做 TBA 时实现钩子 + 翻开关，无需重部署
- * - 部署后 deployer (operator) 必须用 ScoreNFT.grantRole 把
- *   ScoreNFT 的 MINTER_ROLE 授权给本合约地址，否则 mintScore 会 revert
+ * - MINTER_ROLE 控制谁能调 mintScore（cron 用 minter 私钥调）
+ * - Phase 6 D-C3：删除 TBA 开关空实现
+ *   原本设计为 setTbaEnabled(true) + _maybeCreateTba 钩子作为 ERC-6551 扩展点，
+ *   但 Solidity 合约部署后代码不可改 → 翻开关也不会产生新行为 → 误导后继者
+ *   未来真要做 ERC-6551，必须新部署本合约或走 proxy 升级，不能在现有合约开关
+ * - 部署后 admin 必须用 ScoreNFT.grantRole 把 ScoreNFT.MINTER_ROLE
+ *   授权给本合约地址，否则 mintScore 会 revert
  */
 contract MintOrchestrator is AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -29,10 +30,6 @@ contract MintOrchestrator is AccessControl {
     /// 永久绑定的 ScoreNFT 工厂地址，构造时定死避免误改
     IScoreNFT public immutable scoreNft;
 
-    /// TBA 总开关（playbook D1：默认关闭，Phase 3 不实际做 ERC-6551）
-    bool public tbaEnabled;
-
-    event TbaEnabledChanged(bool enabled);
     event ScoreMinted(address indexed to, uint256 indexed tokenId);
 
     constructor(address scoreNftAddress) {
@@ -48,29 +45,6 @@ contract MintOrchestrator is AccessControl {
         address to
     ) external onlyRole(MINTER_ROLE) returns (uint256 tokenId) {
         tokenId = scoreNft.mint(to);
-        _maybeCreateTba(tokenId);
         emit ScoreMinted(to, tokenId);
-    }
-
-    /// admin 切换 TBA 总开关。Phase 3 期间始终保持 false
-    function setTbaEnabled(bool enabled) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        tbaEnabled = enabled;
-        emit TbaEnabledChanged(enabled);
-    }
-
-    /**
-     * TBA 钩子 —— 当前是空 stub
-     *
-     * Phase 4+ 真要启用 TBA 时，在这里实现：
-     * 1. require(tbaEnabled, "tba off");
-     * 2. ERC-6551 Registry.createAccount(implementation, chainId, scoreNft, tokenId, salt);
-     * 不需要重部署本合约，只需升级钩子实现 + admin 翻 setTbaEnabled(true)。
-     */
-    function _maybeCreateTba(uint256 /* tokenId */) internal view {
-        // 故意留空：Phase 3 不做 ERC-6551
-        // 用 view 修饰免得编译 warning（未使用状态变量）
-        if (tbaEnabled) {
-            // 占位：未来 Phase 4+ 在此处接 ERC-6551 Registry
-        }
     }
 }

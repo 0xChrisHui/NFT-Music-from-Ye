@@ -6,44 +6,63 @@ import "../src/ScoreNFT.sol";
 import "../src/MintOrchestrator.sol";
 
 /**
- * Phase 3 S3.b 部署脚本 — MintOrchestrator + 权限授权 + 端到端验证
+ * Phase 6 C2 + C3 部署脚本 — MintOrchestrator
  *
- * 三步动作（一笔 broadcast 内完成）：
- * 1. new MintOrchestrator(SCORE_NFT_ADDRESS)
- * 2. ScoreNFT.grantRole(MINTER_ROLE, orchestrator)  ← 关键授权
- * 3. orchestrator.mintScore(deployer)               ← 端到端验证
- *    第 3 步会在 OP Sepolia 真的 mint 一张 ScoreNFT (tokenId 1)
+ * 改动（vs Phase 3 S3.b）：
+ *   - 删除"端到端 mint(deployer)"测试 mint（C3 拆到 TestMintOrchestrator.s.sol）
+ *     原因：主网照跑 = 合集 tokenId 1 永久无 metadata
+ *   - admin / minter 参数化（C2，env 缺省回退 deployer）
+ *   - ScoreNFT.grantRole 仅在 deployer 仍持有 ScoreNFT.DEFAULT_ADMIN_ROLE 时执行；
+ *     主网模式下 admin 已在 ScoreNFT 部署阶段移交，本步骤会 log 提示由 admin 手动调
  *
  * 用法：
- * cd contracts
- * SCORE_NFT_ADDRESS=0xA65C... \
- *   forge script script/DeployOrchestrator.s.sol \
- *     --rpc-url $ALCHEMY_RPC_URL \
- *     --private-key $OPERATOR_PRIVATE_KEY \
- *     --broadcast -vv
+ *   cd contracts
+ *   SCORE_NFT_ADDRESS=0x... \
+ *     forge script script/DeployOrchestrator.s.sol \
+ *       --rpc-url $ALCHEMY_RPC_URL --broadcast -vv
+ *
+ * 主网 admin 手动授权命令见 docs/MAINNET-RUNBOOK.md。
  */
 contract DeployOrchestrator is Script {
     function run() external {
+        uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+        address deployer = vm.addr(deployerKey);
+        address admin = vm.envOr("ADMIN_ADDRESS", deployer);
+        address minter = vm.envOr("MINTER_ADDRESS", deployer);
         address scoreNftAddr = vm.envAddress("SCORE_NFT_ADDRESS");
-        address deployer = msg.sender;
 
-        vm.startBroadcast();
+        vm.startBroadcast(deployerKey);
 
-        // Step 1: 部署 Orchestrator
+        // 1. 部署 Orchestrator（构造函数把 deployer 设为 admin + minter）
         MintOrchestrator orchestrator = new MintOrchestrator(scoreNftAddr);
-        console.log("MintOrchestrator deployed at:", address(orchestrator));
+        console.log("MintOrchestrator:", address(orchestrator));
 
-        // Step 2: 把 ScoreNFT 的 MINTER_ROLE 复制给 Orchestrator
-        ScoreNFT nft = ScoreNFT(scoreNftAddr);
-        bytes32 minterRole = nft.MINTER_ROLE();
-        nft.grantRole(minterRole, address(orchestrator));
-        console.log("Granted MINTER_ROLE to Orchestrator on ScoreNFT");
+        // 2. 修正 Orchestrator 自身的 admin / minter
+        if (minter != deployer) {
+            orchestrator.grantRole(orchestrator.MINTER_ROLE(), minter);
+            orchestrator.revokeRole(orchestrator.MINTER_ROLE(), deployer);
+        }
+        if (admin != deployer) {
+            orchestrator.grantRole(orchestrator.DEFAULT_ADMIN_ROLE(), admin);
+            orchestrator.revokeRole(orchestrator.DEFAULT_ADMIN_ROLE(), deployer);
+        }
 
-        // Step 3: 端到端验证 — 真的 mint 一张到 deployer
-        uint256 tokenId = orchestrator.mintScore(deployer);
-        console.log("End-to-end mint OK, tokenId:", tokenId);
-        console.log("Owner of tokenId:", nft.ownerOf(tokenId));
+        // 3. 把 ScoreNFT 的 MINTER_ROLE 授权给 Orchestrator
+        //    注意：需要 deployer 仍持有 ScoreNFT.DEFAULT_ADMIN_ROLE
+        ScoreNFT scoreNft = ScoreNFT(scoreNftAddr);
+        bytes32 nftMinter = scoreNft.MINTER_ROLE();
+        if (scoreNft.hasRole(scoreNft.DEFAULT_ADMIN_ROLE(), deployer)) {
+            scoreNft.grantRole(nftMinter, address(orchestrator));
+            console.log("Granted ScoreNFT.MINTER_ROLE to Orchestrator");
+        } else {
+            console.log("[!] deployer lacks ScoreNFT.DEFAULT_ADMIN_ROLE");
+            console.log("    admin must run: cast send <ScoreNFT> 'grantRole(bytes32,address)' <MINTER_ROLE> <Orchestrator>");
+        }
 
         vm.stopBroadcast();
+
+        console.log("Deployer:", deployer);
+        console.log("Admin:   ", admin);
+        console.log("Minter:  ", minter);
     }
 }
