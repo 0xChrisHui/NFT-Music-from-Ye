@@ -72,4 +72,12 @@ export interface HealthResponse {
   scoreQueue: Record<string, number>;
   jwtBlacklistSize: number;
   lastBalanceAlert: string | null;
+  /** Phase 6 E1：material mint_queue 失败/卡住聚合视图 */
+  mintQueue: {
+    failed: number;
+    /** status=minting_onchain + tx_hash 为空 + updated_at > 3 分钟前 */
+    stuck: number;
+    /** 队列最老一笔 pending/minting 的等待秒数；空队列为 null */
+    oldestAgeSeconds: number | null;
+  };
 }

@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
     scoreQueue: {},
     jwtBlacklistSize: 0,
     lastBalanceAlert: null,
+    mintQueue: { failed: 0, stuck: 0, oldestAgeSeconds: null },
   };
 
   try {
@@ -73,6 +74,37 @@ export async function GET(req: NextRequest) {
       .eq('key', 'last_balance_alert')
       .maybeSingle();
     result.lastBalanceAlert = alertKv?.value ?? null;
+
+    // 7. mint_queue 失败/卡住聚合（Phase 6 E1，Pre-tester gate 必备）
+    //    stuck = minting_onchain 状态 + tx_hash 为空 + 已超 3 分钟没动 → 怀疑 cron 死锁
+    const threeMinAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+    const [failedRes, stuckRes, oldestRes] = await Promise.all([
+      supabaseAdmin
+        .from('mint_queue')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'failed'),
+      supabaseAdmin
+        .from('mint_queue')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'minting_onchain')
+        .is('tx_hash', null)
+        .lt('updated_at', threeMinAgo),
+      supabaseAdmin
+        .from('mint_queue')
+        .select('updated_at')
+        .in('status', ['pending', 'minting_onchain'])
+        .order('updated_at', { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    const oldestUpdated = oldestRes.data?.updated_at;
+    result.mintQueue = {
+      failed: failedRes.count ?? 0,
+      stuck: stuckRes.count ?? 0,
+      oldestAgeSeconds: oldestUpdated
+        ? Math.floor((Date.now() - new Date(oldestUpdated).getTime()) / 1000)
+        : null,
+    };
 
     return NextResponse.json(result);
   } catch (err) {
