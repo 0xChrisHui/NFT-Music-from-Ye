@@ -5,7 +5,8 @@ import { acquireOpLock, releaseOpLock } from '@/src/lib/chain/operator-lock';
 import { supabaseAdmin } from '@/src/lib/supabase';
 import type { ScoreMintQueueRow, ScoreMintStatus } from '@/src/types/jam';
 import { stepUploadEvents, stepUploadMetadata } from './steps-upload';
-import { stepMintOnchain, stepSetTokenUri } from './steps-chain';
+import { stepMintOnchain } from './steps-mint';
+import { stepSetTokenUri } from './steps-set-uri';
 
 /**
  * GET /api/cron/process-score-queue?secret=xxx
@@ -14,37 +15,39 @@ import { stepMintOnchain, stepSetTokenUri } from './steps-chain';
  *   pending → uploading_events → minting_onchain →
  *   uploading_metadata → setting_uri → success
  *
- * 每一步独立。失败时 retry_count++ + last_error 记录 + status 不变
- * （除非耗尽 MAX_RETRY），下次 cron 从断点续跑。
+ * Phase 6 A0：入口拿运营钱包全局锁（防 nonce race）
+ * Phase 6 A1：每次 claim 分配 leaseOwner，所有 update 必须 CAS owner + 未过期
+ *             终态（success / failed）清 lease；catch 失败也清 lease 让其他 cron 接管
  *
- * 幂等策略（playbook 硬门槛）：
- * - minting_onchain：进入前 tx_hash 存在 → 跳过重发，直接走 receipt 回查
- *                    tx_hash 不存在 → 发送并立刻回写 DB
- * - setting_uri：setTokenURI 幂等，可重复写入同 URI 无副作用
- * - uploading_events/metadata：Arweave 内容寻址，同内容重传得到同 txid
+ * 幂等核心：
+ *   - 上传步骤：Arweave 内容寻址，同内容重传得到同 txid
+ *   - mint / setTokenURI：tx_hash / uri_tx_hash 立刻入库，崩溃重启不重发
+ *   - "CRITICAL: ..." 错误（chain 已发但 DB 失败）→ 直接 failed 不 retry
  */
 
 const MAX_RETRY = 3;
 
 export async function GET(req: NextRequest) {
-  // 1. 验证 cron secret（header 优先，兼容 query param）
   if (!verifyCronSecret(req)) {
     return NextResponse.json({ error: '无效的 secret' }, { status: 401 });
   }
 
-  // Phase 6 A0：入口拿运营钱包全局锁，避免和 mint / airdrop cron nonce race
-  const holder = `score-queue-${randomUUID()}`;
-  if (!(await acquireOpLock(holder))) {
+  const opHolder = `score-queue-${randomUUID()}`;
+  if (!(await acquireOpLock(opHolder))) {
     return NextResponse.json({ result: 'busy', processed: 0 });
   }
 
   let claimedId: string | null = null;
   let claimedRetry = 0;
+  const leaseOwner = randomUUID();
 
   try {
-    // 2. 原子抢单：FOR UPDATE SKIP LOCKED 保证并发安全
+    // 原子抢单 + 分配 5 分钟 lease
     const { data: rows, error: queryErr } = await supabaseAdmin
-      .rpc('claim_score_queue_job');
+      .rpc('claim_score_queue_job', {
+        p_owner: leaseOwner,
+        p_lease_minutes: 5,
+      });
 
     if (queryErr) throw queryErr;
     if (!rows || rows.length === 0) {
@@ -55,42 +58,49 @@ export async function GET(req: NextRequest) {
     claimedId = row.id;
     claimedRetry = row.retry_count;
 
-    console.log(`[score-cron] picked ${row.id} status=${row.status}`);
+    console.log(`[score-cron] picked ${row.id} status=${row.status} lease=${leaseOwner}`);
 
-    // 3. 根据 status 路由到对应 step 函数
+    // 路由到对应 step（所有 step 内部 update 都带 owner CAS）
     let newStatus: ScoreMintStatus;
     switch (row.status) {
       case 'pending':
       case 'uploading_events':
-        newStatus = await stepUploadEvents(row);
+        newStatus = await stepUploadEvents(row, leaseOwner);
         break;
       case 'minting_onchain':
-        newStatus = await stepMintOnchain(row);
+        newStatus = await stepMintOnchain(row, leaseOwner);
         break;
       case 'uploading_metadata':
-        newStatus = await stepUploadMetadata(row);
+        newStatus = await stepUploadMetadata(row, leaseOwner);
         break;
       case 'setting_uri':
-        newStatus = await stepSetTokenUri(row);
+        newStatus = await stepSetTokenUri(row, leaseOwner);
         break;
       default:
         throw new Error(`unexpected status: ${row.status}`);
     }
 
-    // 4. 推进 status（CAS：只有当前 status 未被其他 worker 改过才更新）
+    // 推进 status：CAS 校验 (status 未变 + 仍是我 + lease 未过期)，终态清 lease
+    const isFinal = newStatus === 'success' || newStatus === 'failed';
+    const nowIso = new Date().toISOString();
     const { data: updated } = await supabaseAdmin
       .from('score_nft_queue')
       .update({
         status: newStatus,
-        updated_at: new Date().toISOString(),
+        updated_at: nowIso,
         last_error: null,
+        ...(isFinal
+          ? { locked_by: null, lease_expires_at: null }
+          : {}),
       })
       .eq('id', claimedId)
       .eq('status', row.status)
+      .eq('locked_by', leaseOwner)
+      .gt('lease_expires_at', nowIso)
       .select('id');
 
     if (!updated || updated.length === 0) {
-      console.warn(`[score-cron] CAS failed: ${claimedId} status already changed`);
+      console.warn(`[score-cron] CAS failed: ${claimedId} lease lost or status changed by stale worker`);
     }
 
     return NextResponse.json({
@@ -98,23 +108,30 @@ export async function GET(req: NextRequest) {
       processed: 1,
       queueId: claimedId,
       status: newStatus,
+      leaseOwner,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[score-cron] error:', msg);
 
-    // 失败降级：retry_count++，耗尽时 → failed，否则保持当前 status 等下次续跑
+    // 失败处理：CRITICAL 直接 failed 不 retry（chain 已发但 DB 失败的场景）
+    // 普通错误 retry_count++，耗尽后 failed；不论何种都释放 lease
     if (claimedId) {
-      const shouldFail = claimedRetry + 1 >= MAX_RETRY;
+      const isCritical = msg.startsWith('CRITICAL');
+      const shouldFail = isCritical || claimedRetry + 1 >= MAX_RETRY;
+
       await supabaseAdmin
         .from('score_nft_queue')
         .update({
           ...(shouldFail ? { status: 'failed' as const } : {}),
-          retry_count: claimedRetry + 1,
+          retry_count: isCritical ? claimedRetry : claimedRetry + 1,
           last_error: msg.slice(0, 500),
+          locked_by: null,
+          lease_expires_at: null,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', claimedId);
+        .eq('id', claimedId)
+        .eq('locked_by', leaseOwner);
     }
 
     return NextResponse.json(
@@ -122,6 +139,6 @@ export async function GET(req: NextRequest) {
       { status: 500 },
     );
   } finally {
-    await releaseOpLock(holder);
+    await releaseOpLock(opHolder);
   }
 }

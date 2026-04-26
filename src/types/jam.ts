@@ -131,6 +131,12 @@ export interface ScoreMintQueueRow {
   retry_count: number;
   last_error: string | null;
   tx_hash: string | null;
+  /** Phase 6 A1: setTokenURI tx hash（拆步，发后存 hash → 下次 cron 查 receipt）*/
+  uri_tx_hash: string | null;
+  /** Phase 6 A1: durable lease — claim 时分配的 owner uuid */
+  locked_by: string | null;
+  /** Phase 6 A1: durable lease 过期时间，过期后其他 cron 可重新 claim */
+  lease_expires_at: string | null;
   created_at: string;
   updated_at: string;
 }

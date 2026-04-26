@@ -8,12 +8,12 @@ import type {
 } from '@/src/types/jam';
 
 /**
- * Arweave 上传相关步骤：
+ * Arweave 上传相关步骤（Phase 6 A1：所有 update 加 lease CAS）：
  *   stepUploadEvents  → pending/uploading_events → minting_onchain
  *   stepUploadMetadata → uploading_metadata → setting_uri
  *
  * 幂等性：Arweave 内容寻址，同内容重传拿到同 txid。
- * 状态字段 events_ar_tx_id / metadata_ar_tx_id 存在时直接短路返回。
+ * lease lost 时（CAS 失败）静默返回原 status，让下次 cron 重新 claim。
  */
 
 // ─────────────────────────────────────────────────
@@ -21,21 +21,22 @@ import type {
 // ─────────────────────────────────────────────────
 export async function stepUploadEvents(
   row: ScoreMintQueueRow,
+  leaseOwner: string,
 ): Promise<ScoreMintStatus> {
   if (row.events_ar_tx_id) {
     console.log(`[score-cron] events already uploaded: ${row.events_ar_tx_id}`);
     return 'minting_onchain';
   }
 
-  // pending → uploading_events 标记"正在上传"
+  // pending → uploading_events 标记（CAS）
   if (row.status === 'pending') {
+    const nowIso = new Date().toISOString();
     await supabaseAdmin
       .from('score_nft_queue')
-      .update({
-        status: 'uploading_events',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', row.id);
+      .update({ status: 'uploading_events', updated_at: nowIso })
+      .eq('id', row.id)
+      .eq('locked_by', leaseOwner)
+      .gt('lease_expires_at', nowIso);
   }
 
   const { data: draft, error } = await supabaseAdmin
@@ -55,13 +56,21 @@ export async function stepUploadEvents(
   );
   const { txId } = await uploadBuffer(buf, 'application/json');
 
-  await supabaseAdmin
+  // 写回 events_ar_tx_id（CAS）
+  const nowIso = new Date().toISOString();
+  const { data: dbOk } = await supabaseAdmin
     .from('score_nft_queue')
-    .update({
-      events_ar_tx_id: txId,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', row.id);
+    .update({ events_ar_tx_id: txId, updated_at: nowIso })
+    .eq('id', row.id)
+    .eq('locked_by', leaseOwner)
+    .gt('lease_expires_at', nowIso)
+    .select('id')
+    .maybeSingle();
+
+  if (!dbOk) {
+    console.warn(`[score-cron] lease lost when writing events_ar_tx_id for ${row.id}`);
+    return 'uploading_events'; // 不推进，下次重做（Arweave 内容寻址同 txId）
+  }
 
   console.log(`[score-cron] events uploaded: ${txId}`);
   return 'minting_onchain';
@@ -72,6 +81,7 @@ export async function stepUploadEvents(
 // ─────────────────────────────────────────────────
 export async function stepUploadMetadata(
   row: ScoreMintQueueRow,
+  leaseOwner: string,
 ): Promise<ScoreMintStatus> {
   if (row.metadata_ar_tx_id) {
     console.log(
@@ -101,7 +111,6 @@ export async function stepUploadMetadata(
   if (!soundsMapTxId) throw new Error('SOUNDS_MAP_AR_TX_ID not configured');
   if (!appUrl) throw new Error('NEXT_PUBLIC_APP_URL not configured');
 
-  // base 参数：必须有 arweave_url，缺失时 fail fast 不铸造错误 metadata
   if (!track.arweave_url) {
     throw new Error(`track ${row.track_id} missing arweave_url, cannot mint`);
   }
@@ -116,7 +125,6 @@ export async function stepUploadMetadata(
     `&base=${encodeURIComponent(baseArUrl)}` +
     `&sounds=ar://${soundsMapTxId}`;
 
-  // 查 events count（用于 attributes）
   const { data: draft } = await supabaseAdmin
     .from('pending_scores')
     .select('events_data')
@@ -144,13 +152,21 @@ export async function stepUploadMetadata(
   console.log(`[score-cron] uploading metadata.json (${buf.length} bytes)`);
   const { txId } = await uploadBuffer(buf, 'application/json');
 
-  await supabaseAdmin
+  // 写回 metadata_ar_tx_id（CAS）
+  const nowIso = new Date().toISOString();
+  const { data: dbOk } = await supabaseAdmin
     .from('score_nft_queue')
-    .update({
-      metadata_ar_tx_id: txId,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', row.id);
+    .update({ metadata_ar_tx_id: txId, updated_at: nowIso })
+    .eq('id', row.id)
+    .eq('locked_by', leaseOwner)
+    .gt('lease_expires_at', nowIso)
+    .select('id')
+    .maybeSingle();
+
+  if (!dbOk) {
+    console.warn(`[score-cron] lease lost when writing metadata_ar_tx_id for ${row.id}`);
+    return 'uploading_metadata';
+  }
 
   console.log(`[score-cron] metadata uploaded: ${txId}`);
   return 'setting_uri';
