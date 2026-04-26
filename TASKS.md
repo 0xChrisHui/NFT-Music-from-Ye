@@ -33,14 +33,16 @@ findings 状态更新：`reviews/phase-6-findings-tracker.md`（7 项 deferred-j
 - 代码 commit `086167d` + 链上 broadcast 记录 + 归档 `reviews/phase-6-deprecated-contracts.md`
 - **待办**：Vercel env 同步 + Redeploy + cron-job.org 5/5 在 v2 下 ≥ 5 分钟全绿（task #7）
 
-### 步骤 2：Pre-tester Gate（4 项，~3 小时）
+### 步骤 2：Pre-tester Gate ✅ 完成（2026-04-26）
 
-- [ ] **G0** 运营就绪检查（balance + cron 5/5 + env 同步 + health + 真实 smoke，15 分）
-- [ ] **A2** material failed 分类重试（`failure_kind: safe_retry / manual_review`，1-2 小时）
-- [ ] **B1** NFT localStorage 按 user_id 隔离（30 分）
-- [ ] **E1** `/api/health` 暴露 mint_queue failed / stuck / retry / oldest age（30-60 分）
+- [x] **G0** 运营就绪检查 — /api/ping + /api/health + cron 5/5 + 14 项 env + 真实 smoke
+- [x] **A2** material failed 分类重试（`failure_kind: safe_retry / manual_review`，commit `8074d18` + migration 021）
+- [x] **B1** NFT localStorage 按 userId 隔离（commit `c749b67`）
+- [x] **E1** `/api/health` 暴露 mintQueue { failed / stuck / oldestAgeSeconds }（commit `f0725df`）
+- 附加修复：useFavorite 改回乐观 UI（commit `931f45f`，G0 第 5 项暴露的体验问题）
+- 附加：memory 拆 feedback/ + project/ 子目录（解 8 文件硬线）
 
-通过 → 限定范围 tester 放人 1-2 周
+✅ 限定范围 tester 可以放人
 
 ---
 
@@ -82,6 +84,14 @@ findings 状态更新：`reviews/phase-6-findings-tracker.md`（7 项 deferred-j
 ---
 
 ## ✅ Done
+
+- **[Phase 6 Pre-tester gate 收口]** ✅ 完成（2026-04-26，4 commits）— 4/4 全绿 + 1 项体验回滚 + memory 重组：
+  - **G0** 运营就绪验证全过（health 返 db=ok / wallet=low-but-ok / cron 5/5 / env 14 项齐 / 收藏 smoke 通）
+  - **B1** `c749b67` — NFT localStorage 按 userId 隔离（nft-cache 5 函数全加 userId 参数 + useAuth.logout 清当前用户 cache + Archipelago/me 监听 userId 变化重读，queueMicrotask 避 React 19 set-state-in-effect lint）
+  - **E1** `f0725df` — `/api/health` 加 mintQueue { failed / stuck / oldestAgeSeconds }（3 query Promise.all 并行，无 migration）
+  - **A2** `8074d18` — mint_queue failure_kind 字段 + 4 处 markFailed 分类（migration 021）+ /api/mint/material 23505 按 status/failure_kind 分流 + useFavorite 处理 409 needsReview
+  - **附加** `931f45f` — useFavorite 改回乐观 UI（部分反转 Phase 5 严格 review 1019dcb）：用户在 G0 验证暴露 3-10 秒等待，确认 Phase 2 原始要求"乐观 + 失败 ops 兜底"，存 memory `feedback/optimistic_ui_with_rollback`
+  - **附加** memory/ 9 文件超 8 硬线 → 拆 feedback/ + project/ 子目录（root 减到 3 entries）
 
 - **[Phase 6 Track C 收口]** ✅ 完成（2026-04-25，commit `086167d`）— 合约 & 部署硬化：
   - C1 ScoreNFT `_uriSet` mapping + setTokenURI 仅首写一次（防 MINTER_ROLE 私钥被盗后改 metadata）

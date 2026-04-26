@@ -6,21 +6,37 @@
 
 ## 当前阶段
 
-**Phase**: Phase 6 — 稳定性收口 + UI 重设计（Track C 已收口，Pre-tester gate 待开工）
-**进度**: Track C 4 step 完结 + ScoreNFT/Orchestrator v2 已重部署 OP Sepolia；下一步 Pre-tester gate 的 4 项
+**Phase**: Phase 6 — 稳定性收口 + UI 重设计（**Pre-tester gate 全完成 ✅，可放 tester**）
+**进度**: Track C 收口 + Pre-tester gate 4/4（G0 + B1 + E1 + A2）+ useFavorite 悲观→乐观回滚 + memory 拆子目录
 **playbook**: `playbook/phase-6/overview.md`（+ 5 个 track 子文档）
-**决策日志**：`docs/JOURNAL.md` 2026-04-25 段落（Phase 5 收口 + Phase 6 kickoff + Track C 收口）
+**决策日志**：`docs/JOURNAL.md` 2026-04-25 段落（Phase 5 收口 + Phase 6 kickoff + Track C 收口 + Pre-tester gate 收口）
 **tester 范围**（Phase 5 定）：素材收藏 + 个人页 + artist 页 + 已铸造乐谱回放；**不含草稿铸造**（bug #5，Phase 6 Track B3）**不含空投**（Phase 6 Track D1 决策）
 
 ## 当前进度
 
-**做到哪**: Phase 5 完全收口（`b0474f1`）+ Phase 6 playbook 就绪 + **Track C 合约 & 部署硬化收口**（commit `086167d` + ScoreNFT/Orchestrator v2 已上链）
+**做到哪**: Phase 5 完全收口 + Track C v2 合约上链 + **Pre-tester gate 4/4 全完成**（commits `086167d` / `b66ed2e` / `931f45f` / `c749b67` / `f0725df` / `8074d18`，全部已 push）
 **下一步**:
-  1. **完成 Track C 收尾** — Vercel env 同步 + Redeploy + cron-job.org 5/5 在 v2 合约下 ≥ 5 分钟全绿
-  2. **Pre-tester gate** — G0 运营就绪检查 + A2 material failed 重试 + B1 NFT cache 用户隔离 + E1 health 暴露 mint_queue 状态 → 限定范围 tester 放人
-  3. **并行开工** — 5 tracks 各自推进（B2 UI 重设计等 tester 反馈 1-2 周后再开工）
-  4. **Phase 6 完结** — 5 tracks 全绿 + completion review → Phase 7 OP 主网
+  1. **限定范围 tester 放人 1-2 周** — 邀请文案 + 反馈渠道（微信群/表单）由用户准备
+  2. **并行开工 Track A/B/D/E 剩余 step**（B2 UI 重设计等 tester 反馈 1-2 周后再开工）
+  3. **Phase 6 完结** — 5 tracks 全绿 + completion review → Phase 7 OP 主网
 **剩余**: Phase 6（5-6 周）→ Phase 7（OP 主网 + 监控 + 退出准备）
+
+### Pre-tester gate 完成清单（2026-04-26）
+
+- ✅ **G0** 运营就绪 — /api/ping + /api/health + cron 5/5 + Vercel env 14 项 + 真实账号收藏 smoke
+- ✅ **B1** NFT localStorage 按 userId 隔离（commit `c749b67`）
+- ✅ **E1** /api/health 暴露 mintQueue 失败/卡住聚合（commit `f0725df`）
+- ✅ **A2** mint_queue failure_kind 分类重试（commit `8074d18`，migration 021）
+- ✅ **G0 阻塞修复** useFavorite 改回乐观 UI（commit `931f45f`，部分反转 Phase 5 严格 review 1019dcb）
+- ✅ memory/ 拆 feedback/ + project/ 子目录（root 9 → 3 entries 解 8 文件硬线）
+
+### 主网承诺边界（Phase 6 D5 → Phase 7 用）
+
+**主网首版包含**：Privy 邮箱登录 / 浏览 + 播放 108 曲 / 素材收藏 → MaterialNFT / 合奏录制 + 草稿 / 草稿 → ScoreNFT（B3 接通后）/ 已铸造乐谱回放 + 分享卡 / 个人页（"我铸造的"语义）/ 艺术家页
+
+**主网首版不包含**：空投（D1 = 不做）/ Semi 社区钱包登录（E2 挂 Phase 7）
+
+**主网首版不允许**：airdrop cron 定时运行 / airdrop trigger 端点对外暴露
 
 ### Phase 5 交付物（2026-04-25 收口）
 
@@ -108,11 +124,11 @@
 
 ## 上次成功验证
 
-- 验证: Phase 6 Track C 收口 — ScoreNFT/Orchestrator v2 部署 + grantRole 链上成功
-- 时间: 2026-04-25
-- commit: `086167d` — feat(contracts): Track C 合约 & 部署硬化（C1-C4）
-- 链上记录: `contracts/broadcast/DeployScore.s.sol/11155420/run-latest.json` + `contracts/broadcast/DeployOrchestrator.s.sol/11155420/run-latest.json`
-- 23/23 forge test + verify.sh 全绿；归档 `reviews/phase-6-deprecated-contracts.md`
+- 验证: Phase 6 Pre-tester gate 4/4 收口 — health 端点线上返回 mintQueue 字段 + 收藏立即变红 + 跨账号 cache 隔离
+- 时间: 2026-04-26
+- commits（4 个一起 push）: `931f45f` useFavorite 乐观 / `c749b67` B1 cache 隔离 / `f0725df` E1 health mintQueue / `8074d18` A2 failure_kind
+- migration: `supabase/migrations/phase-6/021_mint_queue_failure_kind.sql` 已在 Supabase 执行
+- 验证证据: `https://pond-ripple.xyz/api/health` 返回 `{"mintQueue":{"failed":0,"stuck":0,"oldestAgeSeconds":null},...}`
 
 ## 当前阻塞
 
