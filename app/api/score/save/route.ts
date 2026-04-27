@@ -98,55 +98,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '曲目不存在' }, { status: 400 });
     }
 
-    // 9. 旧草稿标记为 expired
-    await supabaseAdmin
-      .from('pending_scores')
-      .update({ status: 'expired', updated_at: new Date().toISOString() })
-      .eq('user_id', auth.userId)
-      .eq('track_id', trackId)
-      .eq('status', 'draft');
-
-    // 10. 插入新草稿
+    // 9. 调原子 RPC（Phase 6 A4）：UPDATE 旧 draft → expired + INSERT 新 draft
+    //    在一个事务内，insert 失败旧 draft 自动 rollback，不会丢草稿
+    //    unique violation（并发场景）由 RPC 内 EXCEPTION 回退查现有 draft 返回
     const expiresAt = new Date(createdMs + DRAFT_TTL_MS).toISOString();
-    const { data: score, error: insertError } = await supabaseAdmin
-      .from('pending_scores')
-      .insert({
-        user_id: auth.userId,
-        track_id: trackId,
-        events_data: eventsData,
-        status: 'draft',
-        created_at: new Date(createdMs).toISOString(),
-        expires_at: expiresAt,
-      })
-      .select('id')
-      .single();
+    const { data: rpcRows, error: rpcError } = await supabaseAdmin.rpc(
+      'save_score_atomic',
+      {
+        p_user_id: auth.userId,
+        p_track_id: trackId,
+        p_events_data: eventsData,
+        p_created_at: new Date(createdMs).toISOString(),
+        p_expires_at: expiresAt,
+      },
+    );
 
-    if (insertError) {
-      // 23505 = 唯一约束冲突，说明已有同一 user+track 的 draft，视为成功
-      if (insertError.code === '23505') {
-        const { data: existing } = await supabaseAdmin
-          .from('pending_scores')
-          .select('id, expires_at')
-          .eq('user_id', auth.userId)
-          .eq('track_id', trackId)
-          .eq('status', 'draft')
-          .single();
-        if (existing) {
-          const res: SaveScoreResponse = {
-            result: 'ok',
-            scoreId: existing.id,
-            expiresAt: existing.expires_at,
-          };
-          return NextResponse.json(res);
-        }
-      }
-      throw insertError;
+    if (rpcError) {
+      console.error('save_score_atomic RPC error:', rpcError);
+      throw rpcError;
+    }
+
+    const row = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+    if (!row?.score_id) {
+      throw new Error('save_score_atomic returned no row');
     }
 
     const res: SaveScoreResponse = {
       result: 'ok',
-      scoreId: score.id,
-      expiresAt,
+      scoreId: row.score_id,
+      expiresAt: row.score_expires_at,
     };
     return NextResponse.json(res, { status: 201 });
   } catch (err) {
