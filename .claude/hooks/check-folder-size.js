@@ -51,6 +51,14 @@ function isExemptDir(dirPath) {
   if (normalized.includes('/src/app/api/') || normalized.endsWith('/src/app/api')) {
     return true;
   }
+  // patatap 动画 effects 目录：26 键 → ~21 个独立同构文件，天然 fan-out
+  // 子目录化无语义增益（动画形态边界模糊），与 api 一类处理
+  if (
+    normalized.includes('/src/components/animations/effects/') ||
+    normalized.endsWith('/src/components/animations/effects')
+  ) {
+    return true;
+  }
   return EXEMPT_DIRS.some(
     (d) => normalized.includes(`/${d}/`) || normalized.endsWith(`/${d}`) || normalized === d
   );
