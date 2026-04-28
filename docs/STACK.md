@@ -43,6 +43,11 @@
 - Web Audio API（浏览器原生，无依赖）
 - 自建简化版 Patatap（Phase 2 spike）
 
+### 视觉动画
+- `two.js`（0.8.x）— 轻量 2D 引擎（13KB gzip），canvas overlay 渲染（Phase 6 B2 patatap 视觉移植用）
+- `@tweenjs/tween.js`（25.x）— 补间动画库，patatap 原项目用（Phase 6 B2 移植配套）
+- 仅在 `'use client'` 组件用，禁止 SSR import（Two.js 依赖 DOM）
+
 ### 合约开发
 - Foundry（`forge` / `cast` / `anvil`）
 - OpenZeppelin Contracts（`forge install`）
