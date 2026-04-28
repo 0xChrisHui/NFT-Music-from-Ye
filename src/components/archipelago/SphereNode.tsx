@@ -1,14 +1,19 @@
 'use client';
 
+import { useState } from 'react';
 import type { Track } from '@/src/types/tracks';
 import { useFavorite } from '@/src/hooks/useFavorite';
 
 /**
- * 单个球体节点的 React 内容（圆 + ripple + 标题 + 心形）
- * 颜色 / 半径 / importance 由 SphereCanvas 计算后通过 props 传入
- *   （Phase 6 B2.1 v2 完整复现 sound-spheres：每节点不同 size + 4 palette × 8 shade）
+ * 单个球体节点的 React 内容（圆 + ripple + 标题 + 心形 + hover-ring + play-icon）
  *
- * 每节点独立 useFavorite 实例 — 108 个 hook 不算重
+ * Phase 6 B2.1 v3 — 完整复现 sound-spheres 视觉：
+ * - glow-soft / glow-strong filter（SVG defs 在 SphereCanvas 里）
+ * - hover 时主圆放大 1.09 + 切到 glow-strong + hover-ring & play-icon ▶ opacity 0→1
+ * - 播放时 play-icon 切 ❚❚ + hover-ring 持续显示
+ * - rune-time hover state 走 React onMouseEnter/Leave（D3 不重启）
+ *
+ * 颜色 / 半径 / importance / groupId 由 SphereCanvas 计算后 props 传入
  */
 
 interface Props {
@@ -22,6 +27,11 @@ interface Props {
   onTogglePlay: () => void;
 }
 
+// sound-spheres line 659 ▶ path
+const PLAY_PATH = 'M-4.5,-6 L7,0 L-4.5,6 Z';
+// sound-spheres line 723 ❚❚ path
+const PAUSE_PATH = 'M-5.5,-6 L-2,-6 L-2,6 L-5.5,6 Z M0.5,-6 L4,-6 L4,6 L0.5,6 Z';
+
 export default function SphereNode({
   track,
   importance,
@@ -34,23 +44,34 @@ export default function SphereNode({
 }: Props) {
   const { status, favorite } = useFavorite(track.week, track.id, onMinted);
   const isMinted = alreadyMinted || status === 'success';
+  const [hovered, setHovered] = useState(false);
 
   // sound-spheres 的 fill-opacity 公式：0.52 + importance * 0.36
   const baseOpacity = 0.52 + importance * 0.36;
+  const showOverlay = hovered || isPlaying;
+  const renderRadius = hovered ? radius * 1.09 : radius;
+  const filterUrl = hovered ? 'url(#glow-strong)' : 'url(#glow-soft)';
 
   return (
-    <>
-      {/* 3 圈 ripple 涟漪（CSS 动画错峰，定义在 globals.css）*/}
+    <g
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* 3 圈 ripple 涟漪（CSS 动画错峰）*/}
       <circle r={radius} fill="none" stroke={color} strokeWidth={1.3} className="ripple-c ripple-r1" />
       <circle r={radius} fill="none" stroke={color} strokeWidth={1.3} className="ripple-c ripple-r2" />
       <circle r={radius} fill="none" stroke={color} strokeWidth={1.3} className="ripple-c ripple-r3" />
 
-      {/* 主节点圆（点击播放）*/}
+      {/* 主节点圆（glow filter + hover 放大）*/}
       <circle
-        r={radius}
+        r={renderRadius}
         fill={color}
         fillOpacity={isPlaying ? Math.min(0.95, baseOpacity + 0.2) : baseOpacity}
-        style={{ cursor: 'pointer', transition: 'fill-opacity 0.3s' }}
+        filter={filterUrl}
+        style={{
+          cursor: 'pointer',
+          transition: 'r 0.22s ease, fill-opacity 0.3s',
+        }}
         onClick={(e) => {
           e.stopPropagation();
           onTogglePlay();
@@ -64,9 +85,28 @@ export default function SphereNode({
         fontSize={9}
         fill="rgba(216,211,200,0.72)"
         pointerEvents="none"
+        fontFamily="var(--font-azeret), monospace"
       >
         {track.title.length > 13 ? track.title.slice(0, 12) + '…' : track.title}
       </text>
+
+      {/* hover-ring（hover / playing 时显示）— sound-spheres line 651-653 */}
+      <circle
+        r={13}
+        fill="rgba(0,0,0,0.55)"
+        stroke="rgba(255,255,255,0.22)"
+        strokeWidth={1}
+        opacity={showOverlay ? 1 : 0}
+        style={{ transition: 'opacity 0.2s', pointerEvents: 'none' }}
+      />
+
+      {/* play-icon（hover/playing 时显示；playing 时切 ❚❚）*/}
+      <path
+        d={isPlaying ? PAUSE_PATH : PLAY_PATH}
+        fill="white"
+        opacity={showOverlay ? 1 : 0}
+        style={{ transition: 'opacity 0.2s', pointerEvents: 'none' }}
+      />
 
       {/* 心形（右上角，点击 useFavorite）*/}
       <g
@@ -88,6 +128,6 @@ export default function SphereNode({
           {isMinted ? '♥' : '♡'}
         </text>
       </g>
-    </>
+    </g>
   );
 }
