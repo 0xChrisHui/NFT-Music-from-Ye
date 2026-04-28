@@ -78,20 +78,20 @@ export function setupSimulation(
     )
     .force(
       'collide',
-      // v8 collide radius * 1.06 + 8 → * 0.95（cluster 内允许稍重叠，更紧凑）
+      // v9 拉开间距 — radius * 0.95 → * 1.4 + 14（节点之间留白，呼吸感）
       forceCollide<SimNode>()
-        .radius((d) => d.radius * 0.95)
+        .radius((d) => d.radius * 1.4 + 14)
         .strength(0.85)
         .iterations(4),
     )
-    // v8 cluster forceX/Y 0.07 → 0.20（强力把节点拉到 cluster anchor）
+    // v9 cluster forceX/Y 0.20 → 0.12（弱化拉力，让节点能在 cluster 内松散散开）
     .force(
       'cluster-x',
-      forceX<SimNode>((d) => clusterAnchors[d.cluster % CLUSTER_COUNT].x).strength(0.20),
+      forceX<SimNode>((d) => clusterAnchors[d.cluster % CLUSTER_COUNT].x).strength(0.12),
     )
     .force(
       'cluster-y',
-      forceY<SimNode>((d) => clusterAnchors[d.cluster % CLUSTER_COUNT].y).strength(0.20),
+      forceY<SimNode>((d) => clusterAnchors[d.cluster % CLUSTER_COUNT].y).strength(0.12),
     )
     // 弱的全局 center 兜底（防整体偏移屏幕）
     .force('center', forceCenter(cx, cy).strength(0.02))

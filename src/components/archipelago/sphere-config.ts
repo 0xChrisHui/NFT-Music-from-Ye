@@ -17,8 +17,9 @@ export const GROUP_PALETTES: string[][] = [
   ['#D8A878','#7EA898','#A83A3A','#6A7898','#E8D8B8','#382828','#B8A8C8','#9AA878'],
   // B — Warm Red / Yellow / Forest / Burgundy / Newsprint / Sienna
   ['#A82A32','#E8C83A','#0A3A2E','#4A2A3C','#C8B8A0','#7A3A2A'],
-  // C — 伊红 / Cy5 荧光 / 黄金切片 / DAPI 紫 / 钴蓝盐 / GFP 绿 / 铬橙 / 盐结晶
-  ['#FF3A78','#3AFFE8','#FFE83A','#A83AFF','#3A8AFF','#48D878','#FF8A3A','#E8E8D8'],
+  // C — 工业金属系（v8 用户改）：铜绿 / 铁锈橙 / 铅灰 / 黄铜苔 /
+  //                              不锈钢 / 褪金 / 深锌 / 熔铁
+  ['#5A8A78','#A8542A','#3A3A3A','#7A8A4A','#4A5A6A','#C8A060','#2A3A4A','#8A3A2A'],
 ];
 
 export type GroupId = 'A' | 'B' | 'C';
