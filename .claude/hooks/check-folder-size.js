@@ -59,6 +59,12 @@ function isExemptDir(dirPath) {
   ) {
     return true;
   }
+  if (
+    normalized.includes('/src/components/animations-svg/effects/') ||
+    normalized.endsWith('/src/components/animations-svg/effects')
+  ) {
+    return true;
+  }
   return EXEMPT_DIRS.some(
     (d) => normalized.includes(`/${d}/`) || normalized.endsWith(`/${d}`) || normalized === d
   );

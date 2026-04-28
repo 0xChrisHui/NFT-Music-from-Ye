@@ -1,14 +1,17 @@
 import Archipelago from '@/src/components/archipelago/Archipelago';
 import LoginButton from '@/src/components/auth/LoginButton';
-import HomeJam from '@/src/components/jam/HomeJam';
-import AnimationLayer from '@/src/components/animations/AnimationLayer';
-// AnimationLayer 是 'use client'，内部 await import 才加载 Two.js，
-// 所以从 server component 直接 import 安全（Two.js 不会在 SSR 期被加载）
+import TestJam from '@/src/components/jam/TestJam';
+import SvgAnimationLayer from '@/src/components/animations-svg/SvgAnimationLayer';
 
 /**
- * /test — 独立沙箱页，用于试验新前端方案（Phase 6 B2 探索阶段）。
- * 内容与 / 一致 + 挂 patatap AnimationLayer 验证动画层。
- * 本路由失败不影响主页。
+ * /test - 独立沙箱页（Phase 6 B2 探索阶段）。
+ *
+ * 当前配置：
+ * - 关闭 HomeJam 旧的 useKeyVisual 动画 → 改用 TestJam（仅音效 + 录制）
+ * - 不挂 patatap Two.js AnimationLayer（搁置不删）
+ * - 加 SvgAnimationLayer（移植 references/aaaa 的 12 个 SVG 动画，26 键映射）
+ *
+ * 主页 / 不受影响。
  */
 export default function TestPage() {
   return (
@@ -18,14 +21,14 @@ export default function TestPage() {
       </div>
 
       <h1 className="text-lg font-light tracking-[0.3em] text-white/80">
-        Ripples in the Pond <span className="text-white/30">— /test sandbox</span>
+        Ripples in the Pond <span className="text-white/30">— /test sandbox · SVG 动画</span>
       </h1>
 
       <Archipelago />
 
-      <HomeJam />
+      <TestJam />
 
-      <AnimationLayer />
+      <SvgAnimationLayer paletteKey="grey" />
     </main>
   );
 }
