@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Track } from '@/src/types/tracks';
 import { useFavorite } from '@/src/hooks/useFavorite';
 
@@ -56,16 +56,36 @@ export default function SphereNode({
   const filterUrl = hovered ? 'url(#glow-strong)' : 'url(#glow-soft)';
   // 日食模式下 hover 主圆 fill 改白色（而不是 group 色）
   const renderFill = hovered && isAnyPlaying ? '#ffffff' : color;
+  // 日食模式下 ripple stroke 改白
+  const rippleStroke = isAnyPlaying ? '#ffffff' : color;
+  // 每个 SphereNode 独立的 ripple 节奏（deterministic，避免 Math.random in render）
+  const rippleTiming = useMemo(() => {
+    let h = 0;
+    for (let i = 0; i < track.id.length; i++) h = (h * 31 + track.id.charCodeAt(i)) >>> 0;
+    const duration = 2.4 + (h % 1800) / 1000; // 2.4-4.2s
+    return [0, 1, 2].map((i) => ({
+      duration,
+      delay: -(((h >>> (i * 7 + 3)) % 4200) / 1000),
+    }));
+  }, [track.id]);
 
   return (
     <g
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* 3 圈 ripple 涟漪（CSS 动画错峰）*/}
-      <circle r={radius} fill="none" stroke={color} strokeWidth={1.3} className="ripple-c ripple-r1" />
-      <circle r={radius} fill="none" stroke={color} strokeWidth={1.3} className="ripple-c ripple-r2" />
-      <circle r={radius} fill="none" stroke={color} strokeWidth={1.3} className="ripple-c ripple-r3" />
+      {/* 3 圈 ripple 涟漪（每节点独立随机节奏；日食模式 stroke 改白）*/}
+      {rippleTiming.map((rt, i) => (
+        <circle
+          key={i}
+          r={radius}
+          fill="none"
+          stroke={rippleStroke}
+          strokeWidth={1.3}
+          className="ripple-c"
+          style={{ animationDuration: `${rt.duration}s`, animationDelay: `${rt.delay}s` }}
+        />
+      ))}
 
       {/* 主节点圆（glow filter + hover 放大；日食时 hover 改白）*/}
       <circle

@@ -10,7 +10,7 @@ import {
 } from 'd3-force';
 import { drag } from 'd3-drag';
 import { select } from 'd3-selection';
-import { CFG, CLUSTER_COUNT, type SimNode, type SimLink } from './sphere-config';
+import { CFG, type SimNode, type SimLink } from './sphere-config';
 
 /** sim 持续漂浮的 baseline alpha（v8 减到 0.008，更微弱漂浮）*/
 const ALPHA_BASELINE = 0.008;
@@ -38,39 +38,50 @@ export function setupSimulation(
   const cx = width / 2;
   const cy = height / 2;
 
-  // Phase 6 B2.1 v6 — 5 个 cluster anchor 让节点形成聚落（非均匀分布）
-  // v8 修：anchor 间距加大（22% → 30% / 18% → 25%）让 5 cluster 不互相挤
-  const clusterAnchors: { x: number; y: number }[] = [
-    { x: cx - width * 0.30, y: cy - height * 0.25 },
-    { x: cx + width * 0.32, y: cy - height * 0.28 },
-    { x: cx - width * 0.26, y: cy + height * 0.28 },
-    { x: cx + width * 0.28, y: cy + height * 0.22 },
-    { x: cx,                y: cy },
-  ];
+  // v12 — 重写分布算法：power-law cluster 容量 + 完全随机 anchor + 35% outlier。
+  // 实现真正的"散点 + 聚落"格局：
+  //   - 4 个 cluster 容量 [10, 6, 4, 3]，越后面越小
+  //   - 每个 cluster anchor 位置完全随机（屏幕中部 60% 区域）
+  //   - 35% outlier 散点：屏幕随机位置 + 极弱拉力（几乎自由）
+  //   - cluster 内 jitter ±60px，cluster 之间不对称
+  const clusterCapacities = [10, 6, 4, 3];
+  const clusterAnchors: { x: number; y: number }[] = clusterCapacities.map(() => ({
+    x: width * (0.18 + Math.random() * 0.64),
+    y: height * (0.18 + Math.random() * 0.64),
+  }));
 
-  // v11 — 给每个节点分配独立 anchor + strength：
-  // 30% 概率作为 outlier（屏幕随机散点 + 弱拉力），70% 在 cluster 内（强拉 + 微 jitter）。
-  // 实现"散点 + 聚落"格局，分布更随机。
   const anchorMap = new Map<string, { x: number; y: number; strength: number }>();
+  let cIdx = 0;
+  let cFill = 0;
   simNodes.forEach((n) => {
-    const isOutlier = Math.random() < 0.3;
+    const isOutlier = Math.random() < 0.35;
     let ax: number;
     let ay: number;
     let strength: number;
     if (isOutlier) {
       ax = PAD + Math.random() * (width - PAD * 2);
       ay = PAD + Math.random() * (height - PAD * 2);
-      strength = 0.025; // 极弱拉力，自由漂
+      strength = 0.018;
     } else {
-      const a = clusterAnchors[n.cluster % CLUSTER_COUNT];
-      ax = a.x + (Math.random() - 0.5) * 90;
-      ay = a.y + (Math.random() - 0.5) * 90;
-      strength = 0.14;
+      while (cIdx < clusterAnchors.length && cFill >= clusterCapacities[cIdx]) {
+        cIdx++;
+        cFill = 0;
+      }
+      if (cIdx >= clusterAnchors.length) {
+        ax = PAD + Math.random() * (width - PAD * 2);
+        ay = PAD + Math.random() * (height - PAD * 2);
+        strength = 0.018;
+      } else {
+        const a = clusterAnchors[cIdx];
+        ax = a.x + (Math.random() - 0.5) * 60;
+        ay = a.y + (Math.random() - 0.5) * 60;
+        strength = 0.16;
+        cFill++;
+      }
     }
     anchorMap.set(n.id, { x: ax, y: ay, strength });
-
-    n.x = ax + (Math.random() - 0.5) * 30;
-    n.y = ay + (Math.random() - 0.5) * 30;
+    n.x = ax + (Math.random() - 0.5) * 20;
+    n.y = ay + (Math.random() - 0.5) * 20;
     n.vx = 0;
     n.vy = 0;
     delete n.fx;
@@ -100,18 +111,23 @@ export function setupSimulation(
         .strength(0.85)
         .iterations(4),
     )
-    // v11 — forceX/Y 用每节点独立 anchor + strength（cluster 内强拉，outlier 弱拉）
+    // v12 — forceX/Y 用每节点独立 anchor + strength；
+    //       拖过节点（_dragLoose）拉力减弱到 0.025（保留弱回弹流动感）
     .force(
       'cluster-x',
-      forceX<SimNode>((d) => anchorMap.get(d.id)?.x ?? cx).strength(
-        (d) => anchorMap.get(d.id)?.strength ?? 0.1,
-      ),
+      forceX<SimNode>((d) => anchorMap.get(d.id)?.x ?? cx).strength((d) => {
+        const dn = d as SimNode & { _dragLoose?: boolean };
+        if (dn._dragLoose) return 0.025;
+        return anchorMap.get(d.id)?.strength ?? 0.1;
+      }),
     )
     .force(
       'cluster-y',
-      forceY<SimNode>((d) => anchorMap.get(d.id)?.y ?? cy).strength(
-        (d) => anchorMap.get(d.id)?.strength ?? 0.1,
-      ),
+      forceY<SimNode>((d) => anchorMap.get(d.id)?.y ?? cy).strength((d) => {
+        const dn = d as SimNode & { _dragLoose?: boolean };
+        if (dn._dragLoose) return 0.025;
+        return anchorMap.get(d.id)?.strength ?? 0.1;
+      }),
     )
     // 弱的全局 center 兜底（防整体偏移屏幕）
     .force('center', forceCenter(cx, cy).strength(0.02))
@@ -158,10 +174,12 @@ export function attachDrag(
       d.fy = e.y;
     })
     .on('end', (e, d) => {
-      // v11：保留 fx/fy 不释放 — 节点固定在拖到位置，可脱离聚落不回弹
-      // 其他未拖节点仍受 alphaTarget baseline 微漂浮
+      // v12：释放 fx/fy 让节点恢复流动 + 标 _dragLoose 减弱该节点的 cluster 拉力
+      // 效果：拖过的节点回弹很弱（几乎留在新位置），但仍参与 alpha 漂浮
       if (!e.active) sim.alphaTarget(ALPHA_BASELINE);
-      void d;
+      d.fx = null;
+      d.fy = null;
+      (d as SimNode & { _dragLoose?: boolean })._dragLoose = true;
     });
 
   els.forEach((el, i) => {
