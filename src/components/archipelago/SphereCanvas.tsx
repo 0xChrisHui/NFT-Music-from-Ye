@@ -20,14 +20,8 @@ import {
 import { setupSimulation, attachDrag } from './sphere-sim-setup';
 
 /**
- * Phase 6 B2.1 v4 — sound-spheres 完整复刻 + DB 数据稀少时 padding 测试视觉
- *
- * v4 修复:
- * - DB 只 5 首 tracks → padding 到 36（循环复用，week 改 1-36 让颜色/大小各异）
- * - 飞出屏幕 → sphere-sim-setup 加 forceX/Y + center.strength 0.1 + tick clamp
- * - 加可见连接线（sound-spheres line 122-127 + 590-599 完整复刻）
- *
- * 物理 / drag / glow / hover / zoom 同 v3 不变
+ * Phase 6 B2.1 — sound-spheres 完整复刻
+ * 数据稀少时 padding 到 36 / forceX/Y + clamp 防飞出 / 渲染连接线
  */
 
 const TARGET_NODE_COUNT = 36;
@@ -141,8 +135,14 @@ export default function SphereCanvas({
     <svg ref={svgRef} className="h-full w-full cursor-grab active:cursor-grabbing">
       <SphereGlowDefs />
       <g ref={zoomGRef}>
-        {/* 连接线层（在节点下面，避免遮挡）*/}
-        <g>
+        {/* 连接线层（在节点下面，避免遮挡；播放时整体淡出聚焦当前节点）*/}
+        <g
+          style={{
+            opacity: playingId !== null ? 0 : 1,
+            transition: 'opacity 0.5s ease',
+            pointerEvents: 'none',
+          }}
+        >
           {simLinks.map((l, i) => {
             const src = simNodes.find((n) => n.id === (typeof l.source === 'string' ? l.source : (l.source as SimNode).id));
             const strokeColor = src?.color ?? '#888';

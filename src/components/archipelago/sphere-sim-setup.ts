@@ -35,10 +35,10 @@ export function setupSimulation(
   const cx = width / 2;
   const cy = height / 2;
 
-  // 初始位置：圆心附近随机散开
+  // 初始位置：圆心附近更大范围扩散（避免开局拥挤剧烈抖动）
   simNodes.forEach((n) => {
     const angle = Math.random() * Math.PI * 2;
-    const dist = 30 + Math.random() * 100;
+    const dist = 60 + Math.random() * 200;
     n.x = cx + Math.cos(angle) * dist;
     n.y = cy + Math.sin(angle) * dist;
     n.vx = 0;
@@ -57,8 +57,9 @@ export function setupSimulation(
     )
     .force(
       'charge',
+      // charge 280 → 180（减弱排斥力，进入时不那么剧烈）
       forceManyBody<SimNode>().strength(
-        (d) => -(CFG.charge * (0.6 + d.importance * 0.8)),
+        (d) => -(180 * (0.6 + d.importance * 0.8)),
       ),
     )
     .force(
@@ -73,6 +74,8 @@ export function setupSimulation(
     .force('y', forceY(cy).strength(0.06))
     .alphaDecay(0.016)
     .velocityDecay(0.4)
+    // 持续保持流动 — 极弱的 alpha 让节点缓慢漂浮，不固化
+    .alphaTarget(0.02)
     .on('tick', () => {
       // clamp x/y 到画布内（防极端 charge 把节点推飞）
       simNodes.forEach((n) => {

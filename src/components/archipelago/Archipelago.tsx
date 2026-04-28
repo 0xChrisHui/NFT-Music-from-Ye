@@ -75,9 +75,18 @@ export default function Archipelago() {
     [currentGroupId, fading],
   );
 
-  // 键盘 ←/→ 切 group
+  // 键盘：← / → 切 group；空格不绑业务但拦截浏览器默认翻页滚动
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // 空格在 input/textarea 外都拦默认翻页行为（用户决定空格暂不赋功能）
+      if (e.key === ' ' || e.code === 'Space') {
+        const t = e.target as HTMLElement | null;
+        const tag = t?.tagName;
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA' && !t?.isContentEditable) {
+          e.preventDefault();
+        }
+        return;
+      }
       const idx = GROUPS.findIndex((g) => g.id === currentGroupId);
       if (e.key === 'ArrowRight') {
         handleGroupChange(GROUPS[(idx + 1) % GROUPS.length].id);

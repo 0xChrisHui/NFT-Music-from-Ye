@@ -48,6 +48,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
    * - stop() 把 loadingRef 设 null → 加载中的 play 也会被 abort
    */
   const loadingRef = useRef<string | null>(null);
+  /**
+   * Phase 6 B2.1 v5: AudioBuffer 缓存，重复点同一首立即播放（首次仍需 fetch+decode）
+   */
+  const buffersRef = useRef<Map<string, AudioBuffer>>(new Map());
   const [playing, setPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [duration, setDuration] = useState(0);
@@ -87,15 +91,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       notifyEnd();
     }
 
-    let buffer: AudioBuffer;
-    try {
-      const res = await fetch(track.audio_url);
-      buffer = await ctx.decodeAudioData(await res.arrayBuffer());
-    } catch (err) {
-      // 加载失败：仅在仍是自己持有 lock 时清，不覆盖后续调用
-      if (loadingRef.current === track.id) loadingRef.current = null;
-      console.error('[player] load failed', { trackId: track.id, err });
-      return;
+    let buffer = buffersRef.current.get(track.id);
+    if (!buffer) {
+      try {
+        const res = await fetch(track.audio_url);
+        buffer = await ctx.decodeAudioData(await res.arrayBuffer());
+        buffersRef.current.set(track.id, buffer);
+      } catch (err) {
+        if (loadingRef.current === track.id) loadingRef.current = null;
+        console.error('[player] load failed', { trackId: track.id, err });
+        return;
+      }
     }
 
     // 加载期间用户切到别的（loadingRef 被覆盖）或 stop（loadingRef = null）→ 放弃 start
