@@ -20,8 +20,10 @@ export const createCorona: EffectFactory = (stage): AnimationEffect => {
   let direction = true;
   let playing = false;
 
+  // 注：Two.js 0.8.x Polygon 用 width/height（构造 radius 转 width=2r/height=2r）
+  // 初始 radius=1（不要 0），后面用 scale 缩到 bubbleRadius
   const circles = range(AMOUNT).map(() => {
-    const c = new Two.Polygon(0, 0, 0, 3);
+    const c = new Two.Polygon(0, 0, 1, 3);
     return c;
   });
 

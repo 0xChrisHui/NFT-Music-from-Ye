@@ -31,7 +31,11 @@ export function initRegistry(stage: Two): void {
 
 export function fire(key: string): boolean {
   const effect = map.get(key.toLowerCase());
-  if (!effect) return false;
+  if (!effect) {
+    console.log('[animations] no effect for key:', key);
+    return false;
+  }
+  console.log('[animations] fire:', key, '→', effect.name);
   effect.start();
   return true;
 }
