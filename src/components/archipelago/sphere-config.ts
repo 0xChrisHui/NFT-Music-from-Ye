@@ -52,16 +52,24 @@ export interface SimLink extends SimulationLinkDatum<SimNode> {
   correlation: number;
 }
 
-/** track.week → 哪个 group（A/B/C 各 36 首）*/
-export function trackGroupId(week: number): GroupId {
-  return GROUPS[(week - 1) % GROUPS.length].id;
+/**
+ * 用户测试模式（2026-04-27）：3 个 group 显示相同的 36 首（前 36 周），
+ * 让 ABC 用各自 palette 给同一批数据上色，对比颜色效果
+ *
+ * 后续如恢复"按 week % 3 严格分 36+36+36"，把 .filter(w<=36) 改回 trackGroupId 比对即可
+ */
+export function getGroupTracks(_gid: GroupId, allTracks: Track[]): Track[] {
+  return allTracks.filter((t) => t.week >= 1 && t.week <= 36);
 }
 
 /**
- * week 派生 importance（0.30-0.95）+ 颜色（按 group 选 palette + shade）
- * 全 deterministic — 同一 track.week 永远拿同一 size + 颜色
+ * week 派生 importance（0.30-0.95）+ 颜色（按 currentGroupId 选 palette + shade）
+ * 全 deterministic：同一 (week, groupId) 永远拿同一 size + 颜色
  */
-export function computeNodeAttrs(track: Track): {
+export function computeNodeAttrs(
+  track: Track,
+  groupId: GroupId,
+): {
   groupId: GroupId;
   importance: number;
   radius: number;
@@ -69,20 +77,15 @@ export function computeNodeAttrs(track: Track): {
 } {
   const importance = 0.30 + ((track.week * 13) % 65) / 100;
   const radius = CFG.minR + importance * (CFG.maxR - CFG.minR);
-  const groupIdx = (track.week - 1) % GROUPS.length;
+  const groupIdx = GROUPS.findIndex((g) => g.id === groupId);
   const palette = GROUP_PALETTES[groupIdx];
-  const shadeIdx = Math.floor((track.week - 1) / GROUPS.length) % palette.length;
+  const shadeIdx = (track.week - 1) % palette.length;
   return {
-    groupId: GROUPS[groupIdx].id,
+    groupId,
     importance,
     radius,
     color: palette[shadeIdx],
   };
-}
-
-/** 当前 group 的 36 个 tracks（filter，保留原 week 顺序） */
-export function getGroupTracks(gid: GroupId, allTracks: Track[]): Track[] {
-  return allTracks.filter((t) => trackGroupId(t.week) === gid);
 }
 
 /**

@@ -50,7 +50,7 @@ export default function SphereCanvas({
       getGroupTracks(currentGroupId, tracks).map((t) => ({
         id: t.id,
         track: t,
-        ...computeNodeAttrs(t),
+        ...computeNodeAttrs(t, currentGroupId),
       })),
     [tracks, currentGroupId],
   );
