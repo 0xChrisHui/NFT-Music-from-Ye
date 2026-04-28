@@ -65,6 +65,10 @@ echo ""
 # 4. 目录文件数检查
 echo "── 4. 目录文件数（≤8）──"
 LARGE_DIRS=$(find src -type d 2>/dev/null | while read -r d; do
+  # 豁免：天然 fan-out 目录（与 .claude/hooks/check-folder-size.js 同步）
+  case "$d" in
+    *src/app/api*|*src/components/animations/effects*) continue ;;
+  esac
   count=$(find "$d" -maxdepth 1 -type f 2>/dev/null | wc -l)
   if [ "$count" -gt 8 ]; then
     echo "  $d: $count 文件"
