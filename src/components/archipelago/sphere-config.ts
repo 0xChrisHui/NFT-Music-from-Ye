@@ -63,6 +63,25 @@ export function getGroupTracks(_gid: GroupId, allTracks: Track[]): Track[] {
 }
 
 /**
+ * DB 数据 < target 时循环复用 padding（v4 适配 DB 仅 5 首样本）
+ * padded 节点改 week 1..target 让颜色 / size 各异；id 加后缀避免 React key 冲突
+ */
+export function padTracksToTarget(real: Track[], target: number): Track[] {
+  if (real.length === 0) return [];
+  if (real.length >= target) return real.slice(0, target);
+  const padded: Track[] = [];
+  for (let i = 0; i < target; i++) {
+    const src = real[i % real.length];
+    padded.push({
+      ...src,
+      id: i < real.length ? src.id : `${src.id}-fill-${i}`,
+      week: i + 1,
+    });
+  }
+  return padded;
+}
+
+/**
  * week 派生 importance（0.30-0.95）+ 颜色（按 currentGroupId 选 palette + shade）
  * 全 deterministic：同一 (week, groupId) 永远拿同一 size + 颜色
  */

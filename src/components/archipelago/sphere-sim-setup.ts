@@ -4,22 +4,30 @@ import {
   forceCollide,
   forceCenter,
   forceLink,
+  forceX,
+  forceY,
   type Simulation,
 } from 'd3-force';
 import { drag } from 'd3-drag';
 import { select } from 'd3-selection';
-import { CFG, generateLinks, type SimNode, type SimLink } from './sphere-config';
+import { CFG, type SimNode, type SimLink } from './sphere-config';
 
 /**
  * Phase 6 B2.1 — D3 force simulation + drag 的纯函数 setup
  * 从 SphereCanvas 抽出（220 行硬线）— 不是 hook，仅函数提取，行为完全不变
  *
- * setupSimulation: 构建 sim + 绑 tick 回调；返回 instance 给 useEffect cleanup
- * attachDrag: 把 sound-spheres 风格的 drag 行为应用到所有 node group
+ * v3 修复（2026-04-27）：
+ * - 加 forceX + forceY 0.06 strength（柔和朝中心拉，不依赖 forceCenter 单点）
+ * - center.strength 0.05 → 0.1（更强收敛）
+ * - tick 内 clamp x/y 到画布边界（最后保险，不会飞出屏幕）
+ * - setupSimulation 接 links 参数（外部 generate，方便和渲染层共享）
  */
+
+const PAD = 60; // 节点距画布边界保留空间
 
 export function setupSimulation(
   simNodes: SimNode[],
+  links: SimLink[],
   width: number,
   height: number,
   onTick: () => void,
@@ -38,8 +46,6 @@ export function setupSimulation(
     delete n.fx;
     delete n.fy;
   });
-
-  const links = generateLinks(simNodes);
 
   return forceSimulation<SimNode>(simNodes)
     .force(
@@ -62,10 +68,19 @@ export function setupSimulation(
         .strength(0.85)
         .iterations(4),
     )
-    .force('center', forceCenter(cx, cy).strength(0.05))
+    .force('center', forceCenter(cx, cy).strength(0.1))
+    .force('x', forceX(cx).strength(0.06))
+    .force('y', forceY(cy).strength(0.06))
     .alphaDecay(0.016)
     .velocityDecay(0.4)
-    .on('tick', onTick);
+    .on('tick', () => {
+      // clamp x/y 到画布内（防极端 charge 把节点推飞）
+      simNodes.forEach((n) => {
+        if (n.x != null) n.x = Math.max(PAD, Math.min(width - PAD, n.x));
+        if (n.y != null) n.y = Math.max(PAD, Math.min(height - PAD, n.y));
+      });
+      onTick();
+    });
 }
 
 /**
