@@ -26,7 +26,7 @@ const ALPHA_BASELINE = 0.008;
  * - setupSimulation 接 links 参数（外部 generate，方便和渲染层共享）
  */
 
-const PAD = 60; // 节点距画布边界保留空间
+const PAD = 20; // v10：60 → 20，给拖动留更宽边界
 
 export function setupSimulation(
   simNodes: SimNode[],
@@ -102,7 +102,9 @@ export function setupSimulation(
     .alpha(0.3)
     .on('tick', () => {
       // clamp x/y 到画布内（防极端 charge 把节点推飞）
+      // v10：被拖动节点（fx/fy 已固定）跳过 clamp — 让用户能完全自由拖
       simNodes.forEach((n) => {
+        if (n.fx != null || n.fy != null) return;
         if (n.x != null) n.x = Math.max(PAD, Math.min(width - PAD, n.x));
         if (n.y != null) n.y = Math.max(PAD, Math.min(height - PAD, n.y));
       });
