@@ -103,12 +103,22 @@ body::after {
   animation: jam-toast-slide 5.5s ease-out;
 }
 
-/* 背景随机涟漪（BackgroundRipples 用）— v18 适中存在感 */
+/* 背景随机涟漪 — v23：起始即可见 + 5s 慢淡出
+   起始 scale 0.05（10-20px 起）+ opacity 0.55（点击立即看到）
+   末段 70-100% 占 4.4-6.1s 多 stop 平滑淡出 */
 @keyframes bg-ripple-out {
-  0%   { transform: scale(0.15); opacity: 0; }
-  16%  { opacity: 0.65; }
-  60%  { opacity: 0.35; }
+  0%   { transform: scale(0.05); opacity: 0.55; }
+  8%   { opacity: 0.7; }
+  50%  { opacity: 0.42; }
+  70%  { opacity: 0.28; }
+  82%  { opacity: 0.16; }
+  92%  { opacity: 0.07; }
   100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* zoom > 1.5 时暂停 sphere ripple 动画（放大状态下省 36×3=108 个无限动画 GPU 占用）*/
+.zoom-large .ripple-c {
+  animation-play-state: paused;
 }
 .bg-ripple {
   pointer-events: none;

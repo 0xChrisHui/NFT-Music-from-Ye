@@ -32,10 +32,10 @@ export function useSphereZoom(
         if (eclipseZoomGRef.current) {
           eclipseZoomGRef.current.setAttribute('transform', t);
         }
-        // v20：放大停 jitter（节约 paint）
-        if (simRef.current) {
-          simRef.current.alphaTarget(e.transform.k > 1.4 ? 0 : 0.008);
-        }
+        // 放大停 jitter + 暂停 sphere ripple 动画（v23 加 zoom-large class 触发 CSS pause）
+        const big = e.transform.k > 1.4;
+        if (simRef.current) simRef.current.alphaTarget(big ? 0 : 0.008);
+        zoomG.classed('zoom-large', big);
       });
 
     svgSel.call(zoomBehavior);

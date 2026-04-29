@@ -101,6 +101,46 @@ export function setupSimulation(
     });
 }
 
+/** 背景涟漪在球周围扩散时的瞬时数据（spawn 时由 BackgroundRipples 通过事件传入）*/
+export interface BgWave {
+  x: number;
+  y: number;
+  size: number;
+  spawnTime: number;
+  duration: number;
+}
+
+/** 涟漪经过球时给球加微小 outward velocity；playing/拖过/fx 锁定的球跳过 */
+export function pushSpheresByWaves(
+  simNodes: SimNode[],
+  waves: BgWave[],
+  playingId: string | null,
+  now: number,
+): void {
+  if (waves.length === 0) return;
+  for (const n of simNodes) {
+    if (n.id === playingId) continue;
+    if (n.fx != null || n.fy != null) continue;
+    if ((n as SimNode & { _dragLoose?: boolean })._dragLoose) continue;
+    if (n.x == null || n.y == null) continue;
+    for (const w of waves) {
+      const ratio = (now - w.spawnTime) / w.duration;
+      if (ratio < 0.05 || ratio > 0.85) continue;
+      const curR = w.size * (0.15 + ratio * 1.25);
+      const dx = n.x - w.x;
+      const dy = n.y - w.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const band = 70;
+      const dist = Math.abs(d - curR);
+      if (dist < band) {
+        const force = 0.18 * (1 - dist / band);
+        n.vx = (n.vx ?? 0) + (dx / d) * force;
+        n.vy = (n.vy ?? 0) + (dy / d) * force;
+      }
+    }
+  }
+}
+
 /** drag 阈值：位移 < 8px 不算拖动，松手 React onClick 仍触发 toggle */
 const DRAG_THRESHOLD = 8;
 export function attachDrag(

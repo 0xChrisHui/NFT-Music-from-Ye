@@ -74,6 +74,7 @@ export default function SphereNode({
 
   return (
     <g
+      data-sphere
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >

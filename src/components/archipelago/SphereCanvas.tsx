@@ -16,7 +16,7 @@ import {
   type SimNode,
   type SimLink,
 } from './sphere-config';
-import { setupSimulation, attachDrag } from './sphere-sim-setup';
+import { setupSimulation, attachDrag, pushSpheresByWaves, type BgWave } from './sphere-sim-setup';
 import { useSphereZoom } from './use-sphere-zoom';
 
 /**
@@ -76,6 +76,24 @@ export default function SphereCanvas({
     playingIdRef.current = playingId;
   }, [playingId]);
 
+  // 背景涟漪推球：监听 bg-ripple:wave 事件，tick 时算波峰位置 + push
+  // 日食状态下 / 拖过的球 / fx 锁定的球 不被推
+  const wavesRef = useRef<BgWave[]>([]);
+  useEffect(() => {
+    const onWave = (e: Event) => {
+      const ce = e as CustomEvent<{ x: number; y: number; size: number; duration: number }>;
+      wavesRef.current.push({
+        x: ce.detail.x,
+        y: ce.detail.y,
+        size: ce.detail.size,
+        spawnTime: performance.now(),
+        duration: ce.detail.duration * 1000,
+      });
+    };
+    window.addEventListener('bg-ripple:wave', onWave);
+    return () => window.removeEventListener('bg-ripple:wave', onWave);
+  }, []);
+
   // ── D3 force simulation + drag + line tick（每次 currentGroupId 变化重建）──
   useEffect(() => {
     if (!svgRef.current || simNodes.length === 0) return;
@@ -103,6 +121,10 @@ export default function SphereCanvas({
           lineEl.setAttribute('y2', String(tgt.y));
         }
       });
+      // 背景涟漪推球（日食/拖过/fx 锁定的球跳过 — 实现在 sphere-sim-setup）
+      const now = performance.now();
+      wavesRef.current = wavesRef.current.filter((w) => now - w.spawnTime < w.duration);
+      pushSpheresByWaves(simNodes, wavesRef.current, playingIdRef.current, now);
       // 日食位置同步（用 ref 读最新 playingId，sim 不会因 play/pause 重建）
       const eclipseEl = eclipseGRef.current;
       if (eclipseEl) {
@@ -136,23 +158,18 @@ export default function SphereCanvas({
     <>
     <svg ref={svgRef} className="h-full w-full cursor-grab active:cursor-grabbing">
       <SphereGlowDefs />
-      {/* v19：zoomG 加 will-change: transform，让浏览器提前给 sphere group 分配 GPU layer
-          减少 zoom 时反复重 layer 化的开销，改善放大状态下的 ripple/glow 渲染稳定性 */}
+      {/* zoomG: will-change:transform 让浏览器提前分配 GPU layer，减放大渲染开销 */}
       <g ref={zoomGRef} style={{ willChange: 'transform' }}>
-        {/* 连接线层（在节点下面；日食模式下整体淡出隐藏）*/}
+        {/* 连接线层（日食时整体淡出）*/}
         <g style={{ opacity: playingId !== null ? 0 : 1, transition: 'opacity 0.5s ease', pointerEvents: 'none' }}>
           {simLinks.map((l, i) => {
             const src = simNodes.find((n) => n.id === (typeof l.source === 'string' ? l.source : (l.source as SimNode).id));
-            const strokeColor = src?.color ?? '#888';
             return (
-              <line
-                key={i}
-                ref={(el) => { lineRefs.current[i] = el; }}
-                stroke={strokeColor}
+              <line key={i} ref={(el) => { lineRefs.current[i] = el; }}
+                stroke={src?.color ?? '#888'}
                 strokeWidth={0.4 + l.correlation * 1.4}
                 strokeOpacity={0.05 + l.correlation * 0.13}
-                strokeLinecap="round"
-                pointerEvents="none"
+                strokeLinecap="round" pointerEvents="none"
               />
             );
           })}
@@ -160,30 +177,16 @@ export default function SphereCanvas({
         {/* 节点层 */}
         <g>
           {simNodes.map((n, i) => {
-            const dimmed = playingId !== null && playingId !== n.track.id;
             const isPlaying = playingId === n.track.id;
+            const dimmed = playingId !== null && !isPlaying;
             return (
-              <g
-                key={n.id}
-                ref={(el) => { nodeRefs.current[i] = el; }}
-                style={{
-                  opacity: dimmed ? 0 : 1,
-                  transition: 'opacity 0.5s ease',
-                }}
-              >
+              <g key={n.id} ref={(el) => { nodeRefs.current[i] = el; }}
+                style={{ opacity: dimmed ? 0 : 1, transition: 'opacity 0.5s ease' }}>
                 <SphereNode
-                  track={n.track}
-                  importance={n.importance}
-                  radius={n.radius}
-                  color={n.color}
-                  isPlaying={isPlaying}
-                  isAnyPlaying={playingId !== null}
-                  alreadyMinted={mintedIds.has(n.track.week)}
-                  onMinted={onMinted}
-                  onTogglePlay={() => {
-                    if (n._dragged) return;
-                    toggle(n.track);
-                  }}
+                  track={n.track} importance={n.importance} radius={n.radius} color={n.color}
+                  isPlaying={isPlaying} isAnyPlaying={playingId !== null}
+                  alreadyMinted={mintedIds.has(n.track.week)} onMinted={onMinted}
+                  onTogglePlay={() => { if (n._dragged) return; toggle(n.track); }}
                 />
               </g>
             );
