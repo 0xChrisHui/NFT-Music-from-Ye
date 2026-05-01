@@ -12,6 +12,10 @@ import {
 } from '@/src/lib/nft-cache';
 import SphereCanvas from './SphereCanvas';
 import { GROUPS, type GroupId, getGroupTracks, padTracksToTarget } from './sphere-config';
+import { DEFAULT_EFFECTS, type EffectsConfig } from './effects-config';
+import AuroraBackground from './effects/ambient/aurora-background';
+import StarsBackground from './effects/ambient/stars-background';
+import FogLayer from './effects/ambient/fog-layer';
 
 /**
  * Archipelago — sound-spheres 风格群岛容器
@@ -27,9 +31,10 @@ import { GROUPS, type GroupId, getGroupTracks, padTracksToTarget } from './spher
  */
 interface Props {
   fullscreen?: boolean;
+  effects?: EffectsConfig;
 }
 
-export default function Archipelago({ fullscreen = false }: Props) {
+export default function Archipelago({ fullscreen = false, effects = DEFAULT_EFFECTS }: Props) {
   const [tracks, setTracks] = useState<Track[]>([]);
   const { authenticated, getAccessToken, userId } = useAuth();
   const [mintedTokenIds, setMintedTokenIds] = useState<Set<number>>(
@@ -144,6 +149,11 @@ export default function Archipelago({ fullscreen = false }: Props) {
 
   return (
     <section className={sectionCls}>
+      {/* v39 ambient effects — 最底层，z 默认 0 */}
+      {effects.aurora && <AuroraBackground />}
+      {effects.stars && <StarsBackground />}
+      {effects.fog && <FogLayer />}
+
       {/* Tabs nav（sound-spheres header 简化版）*/}
       <nav className={navCls}>
         {GROUPS.map((g) => {
@@ -189,6 +199,7 @@ export default function Archipelago({ fullscreen = false }: Props) {
           currentGroupId={currentGroupId}
           mintedIds={mintedTokenIds}
           onMinted={handleMinted}
+          effects={effects}
         />
       </div>
     </section>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePlayer } from './PlayerProvider';
+import { useFavorite } from '@/src/hooks/useFavorite';
 
 /** 秒 → "m:ss" */
 function formatTime(sec: number): string {
@@ -18,6 +19,11 @@ export default function BottomPlayer() {
   const { playing, currentTrack, duration, startedAt, stop, getCurrentTime } =
     usePlayer();
   const [progress, setProgress] = useState(0);
+  // hooks 不能 conditional，currentTrack null 时用 placeholder（不会触发 favorite()）
+  const { status, favorite } = useFavorite(
+    currentTrack?.week ?? 0,
+    currentTrack?.id ?? '__placeholder__',
+  );
 
   useEffect(() => {
     const tick = () => {
@@ -66,14 +72,25 @@ export default function BottomPlayer() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={stop}
-          className="text-white/60 hover:text-white transition-colors text-sm"
-          aria-label="停止播放"
-        >
-          ⏸ 停止
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={favorite}
+            className="text-sm transition-colors"
+            style={{ color: status === 'success' ? '#fb7185' : 'rgba(255,255,255,0.6)' }}
+            aria-label="收藏"
+          >
+            {status === 'success' ? '已收藏' : '收藏'}
+          </button>
+          <button
+            type="button"
+            onClick={stop}
+            className="text-white/60 hover:text-white transition-colors text-sm"
+            aria-label="停止播放"
+          >
+            ⏸ 停止
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,26 +1,12 @@
 import type { SimulationLinkDatum, SimulationNodeDatum } from 'd3-force';
 import type { Track } from '@/src/types/tracks';
 
-/**
- * Phase 6 B2.1 — sound-spheres 的配置 + 节点/链接生成纯函数
- * 抽出来方便调色 / 调参 / 改 link 密度（不动 React/D3 渲染逻辑）
- *
- * 用户决策（2026-04-27）：3 group A/B/C 各 36 首；不做跨 group 虚线圈
- */
+/** sound-spheres 配置 + 节点/链接生成纯函数 */
 
-// 3 group palette（v26 — B/C 改为 A 删 2 + 加 2 同风格变体，皆 8 色）
-// A: Portra 暖橙系 8 色（基底）
-// B: Cinestill 800T 夜景 8 色 — A 删暖橙/奶油，加深夜蓝/霓虹红
-// C: Ektar 100 鲜艳 8 色 — A 删巧克力/紫调阴影，加鲜橙/翡翠绿
+// v26 — 3 group palette 皆 8 色：A Portra 暖橙基底；B Cinestill 800T 夜景；C Ektar 100 鲜艳
 export const GROUP_PALETTES: string[][] = [
-  // A — Portra 暖橙 / Fuji 青绿 / Cinestill 红 / Ektachrome 蓝 /
-  //     高光奶油 / 阴影巧克力 / 紫调阴影 / CN16 草绿
   ['#D8A878','#7EA898','#A83A3A','#6A7898','#E8D8B8','#382828','#B8A8C8','#9AA878'],
-  // B — Vintage Slide + 霓虹红（v29 替换 #A88068 红棕）：Portra 暖橙 / Fuji 青绿 /
-  //     高光奶油 / 阴影巧克力 / 紫调阴影 / CN16 草绿 / 霓虹红 / 橄榄
   ['#D8A878','#7EA898','#E8D8B8','#382828','#B8A8C8','#9AA878','#C8504A','#888858'],
-  // C — Ektar 100 鲜艳：Portra 暖橙 / Fuji 青绿 / Cinestill 红 / Ektachrome 蓝 /
-  //     高光奶油 / CN16 草绿 / 鲜橙 / 翡翠绿
   ['#D8A878','#7EA898','#A83A3A','#6A7898','#E8D8B8','#9AA878','#D88A4A','#5A8868'],
 ];
 
@@ -29,7 +15,7 @@ export type GroupId = 'A' | 'B' | 'C';
 export interface GroupDef {
   id: GroupId;
   label: string;
-  color: string; // tab pip 颜色（用每个 palette 的第一色）
+  color: string;
 }
 
 export const GROUPS: GroupDef[] = [
@@ -38,7 +24,7 @@ export const GROUPS: GroupDef[] = [
   { id: 'C', label: '3', color: GROUP_PALETTES[2][0] },
 ];
 
-// v31 — 球大小恢复到 v29（9/30），靠减 collide 斥力 + 提 outlier 拉力压总占地
+// v31 — 球大小 9/30，靠减 collide 斥力 + 提 outlier 拉力压总占地
 export const CFG = {
   minR: 9,
   maxR: 30,
@@ -55,10 +41,19 @@ export interface SimNode extends SimulationNodeDatum {
   importance: number;
   radius: number;
   color: string;
+  baseLayer: number;
+  kSize: number;
+  lw: { amp: number; f1: number; f2: number; p1: number; p2: number };
   _dragged?: boolean;
 }
 
-/** deterministic 字符串哈希（节点 jitter 用，保证位置稳定）*/
+// v75/v86 — N=10 层，K∈[24,28]（v86 K_MIN 16→24，球级最小变大 1.5×），f(1)=1.0、f(10)=0.5
+export const NUM_LAYERS = 10, LAYER_MIN_FACTOR = 0.5, K_MIN = 24, K_MAX = 28;
+
+export function fLayer(x: number): number {
+  return 1 - ((x - 1) / (NUM_LAYERS - 1)) * (1 - LAYER_MIN_FACTOR);
+}
+
 export function hashStr(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = ((h * 31 + s.charCodeAt(i)) & 0xffffffff) >>> 0;
@@ -66,13 +61,9 @@ export function hashStr(s: string): number {
 }
 
 /**
- * v32 — 随机 cluster 划分：每次调用结果不同（用 Math.random，必须在 useEffect 内调用，
- * 不能在 useMemo body 内调用以避免触发 react-hooks/purity）。
- *
- * 大小池 power-law：单球 / 对儿 / 三球 / 大聚落混合，每次刷新组合都不同。
- * 36 球用此池约生成 12 个 cluster，size 1-5 不等。
- *
- * 所有节点都被分到某个 cluster（不再有"outlier"概念）；size=1 的 cluster 自然就是孤立球。
+ * v32 — 随机 cluster 划分：大小池 power-law（单球/对儿/三球/大聚落混合）。
+ * 必须在 useEffect 内调用（用了 Math.random，避 react-hooks/purity）。
+ * size=1 的 cluster 自然就是孤立球。
  */
 export function buildClusterAssignment(nodeIds: string[]): {
   assignment: Map<string, number>;
@@ -115,20 +106,12 @@ export interface SimLink extends SimulationLinkDatum<SimNode> {
   correlation: number;
 }
 
-/**
- * 用户测试模式（2026-04-27）：3 个 group 显示相同的 36 首（前 36 周），
- * 让 ABC 用各自 palette 给同一批数据上色，对比颜色效果
- *
- * 后续如恢复"按 week % 3 严格分 36+36+36"，把 .filter(w<=36) 改回 trackGroupId 比对即可
- */
+// 用户测试模式（2026-04-27）：3 group 共用前 36 首，对比 palette 效果
 export function getGroupTracks(_gid: GroupId, allTracks: Track[]): Track[] {
   return allTracks.filter((t) => t.week >= 1 && t.week <= 36);
 }
 
-/**
- * DB 数据 < target 时循环复用 padding（v4 适配 DB 仅 5 首样本）
- * padded 节点改 week 1..target 让颜色 / size 各异；id 加后缀避免 React key 冲突
- */
+// DB < target 时循环 padding；改 week 1..target 让颜色/size 各异；id 加后缀避 React key 冲突
 export function padTracksToTarget(real: Track[], target: number): Track[] {
   if (real.length === 0) return [];
   if (real.length >= target) return real.slice(0, target);
@@ -144,37 +127,27 @@ export function padTracksToTarget(real: Track[], target: number): Track[] {
   return padded;
 }
 
-/**
- * week 派生 importance（0.30-0.95）+ 颜色（按 currentGroupId 选 palette + shade）
- * 全 deterministic：同一 (week, groupId) 永远拿同一 size + 颜色
- */
-export function computeNodeAttrs(
-  track: Track,
-  groupId: GroupId,
-): {
+// week 派生 importance + 颜色，全 deterministic
+export function computeNodeAttrs(track: Track, groupId: GroupId): {
   groupId: GroupId;
   importance: number;
   radius: number;
   color: string;
+  kSize: number;
 } {
   const importance = 0.30 + ((track.week * 13) % 65) / 100;
-  const radius = CFG.minR + importance * (CFG.maxR - CFG.minR);
+  const kHash = ((track.week * 17) % 100) / 100;
+  const kSize = K_MIN + kHash * (K_MAX - K_MIN);
   const groupIdx = GROUPS.findIndex((g) => g.id === groupId);
   const palette = GROUP_PALETTES[groupIdx];
   const shadeIdx = (track.week - 1) % palette.length;
-  return {
-    groupId,
-    importance,
-    radius,
-    color: palette[shadeIdx],
-  };
+  return { groupId, importance, radius: kSize, color: palette[shadeIdx], kSize };
 }
 
 /**
- * v32 — 聚落式 link 拓扑：仅同一 cluster 内的节点之间生成 link。
- * link 拉力方向 = cluster anchor 拉力方向（一致），不会撕裂聚落。
- * 接收 buildClusterAssignment 生成的 assignment（与 setupSimulation 共用，保证一致）。
- * size=1 的 cluster 自然无 link；size=2 形成"对儿"互连；更大 cluster 全连接。
+ * v32 — 聚落式 link：仅同 cluster 全连接（拉力方向 ≡ cluster anchor，不撕裂）。
+ * v86 — 加跨 cluster 稀疏边：每对 cluster 5% 概率 1 条，corr 0.12-0.22 弱拉力
+ *       拉力 ≈ 0.04-0.07，远弱于内部 0.15-0.24；距离 ≈ 89-94 自然拉长。
  */
 export function generateLinks(
   nodes: SimNode[],
@@ -202,6 +175,22 @@ export function generateLinks(
       }
     }
   });
+
+  const clusterIds = Array.from(clusterMembers.keys());
+  for (let a = 0; a < clusterIds.length; a++) {
+    for (let b = a + 1; b < clusterIds.length; b++) {
+      if (Math.random() > 0.05) continue;
+      const m1 = clusterMembers.get(clusterIds[a])!;
+      const m2 = clusterMembers.get(clusterIds[b])!;
+      const i1 = m1[Math.floor(Math.random() * m1.length)];
+      const i2 = m2[Math.floor(Math.random() * m2.length)];
+      links.push({
+        source: nodes[i1].id,
+        target: nodes[i2].id,
+        correlation: 0.12 + Math.random() * 0.10,
+      });
+    }
+  }
 
   return links;
 }

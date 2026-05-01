@@ -144,7 +144,7 @@ export function pushSpheresByWaves(
 /** drag 阈值：位移 < 8px 不算拖动，松手 React onClick 仍触发 toggle */
 const DRAG_THRESHOLD = 8;
 export function attachDrag(
-  els: (SVGGElement | null)[],
+  elMap: Map<string, SVGGElement>,
   nodes: SimNode[],
   sim: Simulation<SimNode, SimLink>,
 ): void {
@@ -176,9 +176,11 @@ export function attachDrag(
       (d as SimNode & { _dragLoose?: boolean })._dragLoose = true;
     });
 
-  els.forEach((el, i) => {
+  // v36 — elMap 取代 array：支持 render 按 z 排序后仍按 id 精确接 drag
+  nodes.forEach((node) => {
+    const el = elMap.get(node.id);
     if (el) {
-      select<SVGGElement, SimNode>(el).datum(nodes[i]).call(dragBehavior);
+      select<SVGGElement, SimNode>(el).datum(node).call(dragBehavior);
     }
   });
 }
