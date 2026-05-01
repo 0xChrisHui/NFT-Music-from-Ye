@@ -76,6 +76,12 @@ export default function BackgroundRipples() {
 
     const tick = () => {
       if (cancelled) return;
+      // v87 G1 — tab 不可见时跳过 spawn（setTimeout 在隐藏 tab 中节流到 1Hz 但仍跑）
+      if (document.hidden) {
+        const id = window.setTimeout(tick, 2400);
+        timers.push(id);
+        return;
+      }
       spawnAuto(false);
       if (Math.random() < 0.45) {
         const extra = 1 + (Math.random() < 0.5 ? 1 : 0);

@@ -10,20 +10,24 @@ import EclipseLayer from './EclipseLayer';
 import {
   buildClusterAssignment,
   computeNodeAttrs,
+  fLayer,
   generateLinks,
   getGroupTracks,
+  halton,
+  hashStr,
+  NUM_LAYERS,
   padTracksToTarget,
   type GroupId,
   type SimNode,
   type SimLink,
 } from './sphere-config';
-import { setupSimulation, attachDrag, pushSpheresByWaves, type BgWave } from './sphere-sim-setup';
-import { useSphereZoom } from './use-sphere-zoom';
-
-/**
- * Phase 6 B2.1 — sound-spheres 完整复刻
- * 数据稀少时 padding 到 36 / forceX/Y + clamp 防飞出 / 渲染连接线
- */
+import { useSphereZoom } from './hooks/use-sphere-zoom';
+import { useSphereZ } from './hooks/use-sphere-z';
+import { useWaveEvents } from './hooks/use-wave-events';
+import { useMouseTilt } from './hooks/use-mouse-tilt';
+import { useSphereSim } from './hooks/use-sphere-sim';
+import CometSystem from './effects/motion/comet-system';
+import type { EffectsConfig } from './effects-config';
 
 const TARGET_NODE_COUNT = 36;
 
@@ -32,25 +36,20 @@ interface Props {
   currentGroupId: GroupId;
   mintedIds: Set<number>;
   onMinted: (tokenId: number) => void;
+  effects: EffectsConfig;
 }
 
 export default function SphereCanvas({
-  tracks,
-  currentGroupId,
-  mintedIds,
-  onMinted,
+  tracks, currentGroupId, mintedIds, onMinted, effects,
 }: Props) {
   const { playing, currentTrack, toggle } = usePlayer();
   const playingId = playing && currentTrack ? currentTrack.id : null;
 
-  // 当前 group 的 tracks → padding 到 36（DB 仅 5 首样本时复用真实数据）
   const tracksToShow = useMemo<Track[]>(
     () => padTracksToTarget(getGroupTracks(currentGroupId, tracks), TARGET_NODE_COUNT),
     [tracks, currentGroupId],
   );
 
-  // v32 — buildClusterAssignment 用 Math.random，不能在 useMemo body（react-hooks/purity）。
-  // 改用 useState + useEffect：每次 tracksToShow/currentGroupId 变化重新生成 random cluster 划分。
   const [simData, setSimData] = useState<{
     nodes: SimNode[];
     links: SimLink[];
@@ -59,150 +58,137 @@ export default function SphereCanvas({
   }>({ nodes: [], links: [], assignment: new Map(), clusterCount: 0 });
 
   useEffect(() => {
-    const nodes: SimNode[] = tracksToShow.map((t) => ({
-      id: t.id,
-      track: t,
+    const baseNodes = tracksToShow.map((t) => ({
+      id: t.id, track: t,
       ...computeNodeAttrs(t, currentGroupId),
     }));
-    const { assignment, clusterCount } = buildClusterAssignment(nodes.map((n) => n.id));
+    const { assignment, clusterCount } = buildClusterAssignment(baseNodes.map((n) => n.id));
+    // v86 — baseLayer 由 z 派生（与 useSphereZ 同公式），保证 layer/tilt/focus/perspective 远近一致
+    const clusterZ = Array.from({ length: clusterCount }, (_, i) => halton(i + 1, 5));
+    const nodes = baseNodes.map((n) => {
+      const baseZ = clusterZ[assignment.get(n.id) ?? 0] ?? 0.5;
+      const h = hashStr(n.id);
+      const z = Math.max(0, Math.min(1, baseZ + ((h % 601) / 1000) - 0.3));
+      const baseLayer = Math.max(1, Math.min(NUM_LAYERS, Math.round((1 - z) * (NUM_LAYERS - 1) + 1)));
+      const lw = { amp: 0.6 + Math.random() * 0.8, f1: 0.04 + Math.random() * 0.08, f2: 0.10 + Math.random() * 0.15, p1: Math.random() * 6.283, p2: Math.random() * 6.283 };
+      return { ...n, baseLayer, lw, radius: n.kSize * fLayer(baseLayer) };
+    });
     const links = generateLinks(nodes, assignment);
     setSimData({ nodes, links, assignment, clusterCount });
   }, [tracksToShow, currentGroupId]);
 
   const { nodes: simNodes, links: simLinks, assignment, clusterCount } = simData;
+  const { zMap, sortedNodes } = useSphereZ(simNodes, assignment, clusterCount);
+
+  const simNodesRef = useRef<SimNode[]>([]);
+  useEffect(() => { simNodesRef.current = simNodes; }, [simNodes]);
 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const zoomGRef = useRef<SVGGElement | null>(null);
-  const nodeRefs = useRef<(SVGGElement | null)[]>([]);
-  const lineRefs = useRef<(SVGLineElement | null)[]>([]);
+  const nodeRefMap = useRef<Map<string, SVGGElement>>(new Map());
+  const lineRefs = useRef<(SVGElement | null)[]>([]);
   const simRef = useRef<Simulation<SimNode, SimLink> | null>(null);
-
-  // 日食覆盖层（独立 fixed z-[55] svg，不被按键动画 z-40 遮）
   const eclipseZoomGRef = useRef<SVGGElement | null>(null);
   const eclipseGRef = useRef<SVGGElement | null>(null);
-
-  // playingId 用 ref 让 tick 拿到最新值，避免 sim useEffect 因 playingId 重建（位置刷新）
+  const ghostRefMap = useRef<Map<string, SVGCircleElement>>(new Map());
   const playingIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    playingIdRef.current = playingId;
-  }, [playingId]);
+  useEffect(() => { playingIdRef.current = playingId; }, [playingId]);
 
-  // 背景涟漪推球：监听 bg-ripple:wave 事件，tick 时算波峰位置 + push
-  // 日食状态下 / 拖过的球 / fx 锁定的球 不被推
-  const wavesRef = useRef<BgWave[]>([]);
+  const [cometEclipseActive, setCometEclipseActive] = useState(false);
   useEffect(() => {
-    const onWave = (e: Event) => {
-      const ce = e as CustomEvent<{ x: number; y: number; size: number; duration: number }>;
-      wavesRef.current.push({
-        x: ce.detail.x,
-        y: ce.detail.y,
-        size: ce.detail.size,
-        spawnTime: performance.now(),
-        duration: ce.detail.duration * 1000,
-      });
+    const onChange = (e: Event) => {
+      const ce = e as CustomEvent<{ active: boolean }>;
+      setCometEclipseActive(ce.detail.active);
     };
-    window.addEventListener('bg-ripple:wave', onWave);
-    return () => window.removeEventListener('bg-ripple:wave', onWave);
+    window.addEventListener('comet:eclipse-changed', onChange);
+    return () => window.removeEventListener('comet:eclipse-changed', onChange);
   }, []);
+  const anyPlaying = playingId !== null || cometEclipseActive;
 
-  // ── D3 force simulation + drag + line tick（每次 currentGroupId 变化重建）──
-  useEffect(() => {
-    if (!svgRef.current || simNodes.length === 0) return;
+  const wavesRef = useWaveEvents();
+  const { ref: mouseRef, insideRef: mouseInsideRef } = useMouseTilt();
+  const { zoomKRef, vanishRef } = useSphereZoom(svgRef, zoomGRef, eclipseZoomGRef, simRef, nodeRefMap, simNodesRef, effects);
 
-    // v34 — 重建 sim 时通知 BackgroundRipples 清屏 + 暂停 2s（避免旧涟漪推新球）
-    // 同时清自己的推球数据，让球以 0 vx/vy 平稳启动
-    window.dispatchEvent(new Event('archipelago:reset'));
-    wavesRef.current = [];
-
-    const W = svgRef.current.clientWidth || 800;
-    const H = svgRef.current.clientHeight || 600;
-
-    const sim = setupSimulation(simNodes, simLinks, W, H, assignment, clusterCount, () => {
-      // 节点 transform
-      simNodes.forEach((n, i) => {
-        const el = nodeRefs.current[i];
-        if (el && n.x != null && n.y != null) {
-          el.setAttribute('transform', `translate(${n.x},${n.y})`);
-        }
-      });
-      // 连接线 x1/y1/x2/y2（forceLink 已把 source/target string 替换为 SimNode 引用）
-      simLinks.forEach((l, i) => {
-        const lineEl = lineRefs.current[i];
-        const src = l.source as SimNode;
-        const tgt = l.target as SimNode;
-        if (lineEl && src.x != null && src.y != null && tgt.x != null && tgt.y != null) {
-          lineEl.setAttribute('x1', String(src.x));
-          lineEl.setAttribute('y1', String(src.y));
-          lineEl.setAttribute('x2', String(tgt.x));
-          lineEl.setAttribute('y2', String(tgt.y));
-        }
-      });
-      // 背景涟漪推球（日食/拖过/fx 锁定的球跳过 — 实现在 sphere-sim-setup）
-      const now = performance.now();
-      wavesRef.current = wavesRef.current.filter((w) => now - w.spawnTime < w.duration);
-      pushSpheresByWaves(simNodes, wavesRef.current, playingIdRef.current, now);
-      // 日食位置同步（用 ref 读最新 playingId，sim 不会因 play/pause 重建）
-      const eclipseEl = eclipseGRef.current;
-      if (eclipseEl) {
-        const pid = playingIdRef.current;
-        const playingNode = pid ? simNodes.find((n) => n.id === pid) : null;
-        if (playingNode && playingNode.x != null && playingNode.y != null) {
-          const s = playingNode.radius / 50; // EclipseLayer unit r=50
-          eclipseEl.setAttribute(
-            'transform',
-            `translate(${playingNode.x},${playingNode.y}) scale(${s})`,
-          );
-          eclipseEl.style.display = 'block';
-        } else {
-          eclipseEl.style.display = 'none';
-        }
-      }
-    });
-
-    simRef.current = sim;
-    attachDrag(nodeRefs.current, simNodes, sim);
-
-    return () => {
-      sim.stop();
-    };
-  }, [simNodes, simLinks]);
-
-  // d3.zoom 行为抽出（含日食层 transform 同步 + 放大停 jitter）
-  useSphereZoom(svgRef, zoomGRef, eclipseZoomGRef, simRef);
+  useSphereSim({
+    svgRef, simNodes, simLinks, assignment, clusterCount, zMap,
+    nodeRefMap, lineRefs, eclipseGRef, ghostRefMap,
+    wavesRef, mouseRef, mouseInsideRef, zoomKRef, vanishRef, playingIdRef,
+    effects, simRef,
+  });
 
   return (
     <>
     <svg ref={svgRef} className="h-full w-full cursor-grab active:cursor-grabbing">
       <SphereGlowDefs />
-      {/* zoomG: will-change:transform 让浏览器提前分配 GPU layer，减放大渲染开销 */}
+      {/* 彗星日食模式光晕 */}
+      <defs>
+        <radialGradient id="comet-halo">
+          <stop offset="0%" stopColor="white" stopOpacity="0" />
+          <stop offset="22%" stopColor="white" stopOpacity="0" />
+          <stop offset="24%" stopColor="white" stopOpacity="0.55" />
+          <stop offset="36%" stopColor="white" stopOpacity="0.32" />
+          <stop offset="60%" stopColor="white" stopOpacity="0.10" />
+          <stop offset="100%" stopColor="white" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      {effects.comet && (
+        <CometSystem
+          simNodes={simNodes} zMap={zMap} svgRef={svgRef}
+          zoomKRef={zoomKRef} vanishRef={vanishRef}
+          perspective={effects.perspective} anyEclipse={anyPlaying}
+          playingId={playingId} focus={effects.focus}
+        />
+      )}
       <g ref={zoomGRef} style={{ willChange: 'transform' }}>
-        {/* 连接线层（日食时整体淡出）*/}
-        <g style={{ opacity: playingId !== null ? 0 : 1, transition: 'opacity 0.5s ease', pointerEvents: 'none' }}>
+        <g style={{ opacity: anyPlaying ? 0 : 1, transition: 'opacity 0.5s ease', pointerEvents: 'none' }}>
           {simLinks.map((l, i) => {
             const src = simNodes.find((n) => n.id === (typeof l.source === 'string' ? l.source : (l.source as SimNode).id));
+            const stroke = src?.color ?? '#888';
+            const sw = 0.4 + l.correlation * 1.4;
+            const so = 0.05 + l.correlation * 0.13;
             return (
-              <line key={i} ref={(el) => { lineRefs.current[i] = el; }}
-                stroke={src?.color ?? '#888'}
-                strokeWidth={0.4 + l.correlation * 1.4}
-                strokeOpacity={0.05 + l.correlation * 0.13}
-                strokeLinecap="round" pointerEvents="none"
+              <line
+                key={i}
+                ref={(el) => { lineRefs.current[i] = el; }}
+                stroke={stroke}
+                strokeWidth={sw}
+                strokeOpacity={so}
+                strokeLinecap="round"
+                pointerEvents="none"
               />
             );
           })}
         </g>
-        {/* 节点层 */}
         <g>
-          {simNodes.map((n, i) => {
+          {sortedNodes.map((n) => {
             const isPlaying = playingId === n.track.id;
-            const dimmed = playingId !== null && !isPlaying;
+            const dimmed = anyPlaying && !isPlaying;
+            const z = zMap.get(n.id) ?? 0.5;
             return (
-              <g key={n.id} ref={(el) => { nodeRefs.current[i] = el; }}
-                style={{ opacity: dimmed ? 0 : 1, transition: 'opacity 0.5s ease' }}>
+              <g key={n.id} data-z={z}
+                ref={(el) => {
+                  if (el) nodeRefMap.current.set(n.id, el);
+                  else nodeRefMap.current.delete(n.id);
+                }}
+                style={{
+                  opacity: dimmed ? 0 : 1,
+                  // v87 perf — 删 transition: filter。filter 在 sim tick 每帧改，
+                  // CSS transition 反而强制每帧插值 + 离屏 GPU layer 重做，是 FPS 杀手。
+                  transition: 'opacity 0.5s ease',
+                  // v87 G2 — contain: layout style 给浏览器 isolation 提示，
+                  // 重绘时不污染邻居（不用 paint 因为会裁剪 glow halo）
+                  contain: 'layout style',
+                }}>
                 <SphereNode
-                  track={n.track} importance={n.importance} radius={n.radius} color={n.color}
-                  isPlaying={isPlaying} isAnyPlaying={playingId !== null}
+                  track={n.track} importance={n.importance} radius={n.radius}
+                  color={n.color}
+                  isPlaying={isPlaying} isAnyPlaying={anyPlaying}
                   alreadyMinted={mintedIds.has(n.track.week)} onMinted={onMinted}
-                  onTogglePlay={() => { if (n._dragged) return; toggle(n.track); }}
+                  onTogglePlay={() => {
+                    if (n._dragged) return;
+                    toggle(n.track);
+                  }}
+                  effects={effects}
                 />
               </g>
             );
