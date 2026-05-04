@@ -6,20 +6,23 @@
 
 ## 当前阶段
 
-**Phase**: Phase 6 — 稳定性收口 + UI 重设计（**Pre-tester gate 全完成 ✅，可放 tester**）
-**进度**: Track C 收口 + Pre-tester gate 4/4（G0 + B1 + E1 + A2）+ useFavorite 悲观→乐观回滚 + memory 拆子目录
-**playbook**: `playbook/phase-6/overview.md`（+ 5 个 track 子文档）
-**决策日志**：`docs/JOURNAL.md` 2026-04-25 段落（Phase 5 收口 + Phase 6 kickoff + Track C 收口 + Pre-tester gate 收口）
-**tester 范围**（Phase 5 定）：素材收藏 + 个人页 + artist 页 + 已铸造乐谱回放；**不含草稿铸造**（bug #5，Phase 6 Track B3 已接通，2026-04-26 后可纳入）**不含空投**（Phase 6 Track D1 决策）**不含 Semi 社区钱包登录**（Phase 6 E2 挂 Phase 7，等 Semi OAuth 文档）
+**Phase**: Phase 6 v2 — 稳定性收口 + 端到端跑通（**v2 缩减：UI 重设计深度版迁 P7**，2026-05-03 决策）
+**进度**: Track C 收口 + Pre-tester gate 4/4（G0 + B1 + E1 + A2）+ useFavorite 悲观→乐观回滚 + memory 拆子目录 + **playbook v2 缩减** + **B6 完成**（A 5 球 + B/C 36 球 demo + Modak 数字 badge）
+**playbook**: `playbook/phase-6/overview.md`（+ 5 个 track 子文档；Track B 13→7 step）
+**决策日志**：`docs/JOURNAL.md` 2026-04-25 段（Phase 5/6 kickoff/Track C/Pre-tester）+ 2026-05-03 段（v2 缩减 + 艺术家反馈）
+**stakeholder 反馈**（取代原 tester 反馈窗口）：艺术家 5 条反馈已收到（视觉 / 动态 / 音阶 / 名字 / 按键动画）；投资人只看链上技术不看 UI
 
 ## 当前进度
 
-**做到哪**: Phase 5 完全收口 + Track C v2 合约上链 + **Pre-tester gate 4/4 全完成**（commits `086167d` / `b66ed2e` / `931f45f` / `c749b67` / `f0725df` / `8074d18`，全部已 push）
-**下一步**:
-  1. **限定范围 tester 放人 1-2 周** — 邀请文案 + 反馈渠道（微信群/表单）由用户准备
-  2. **并行开工 Track A/B/D/E 剩余 step**（B2 UI 重设计等 tester 反馈 1-2 周后再开工）
-  3. **Phase 6 完结** — 5 tracks 全绿 + completion review → Phase 7 OP 主网
-**剩余**: Phase 6（5-6 周）→ Phase 7（OP 主网 + 监控 + 退出准备）
+**做到哪**: Phase 5 完全收口 + Track C v2 合约上链 + **Pre-tester gate 4/4 全完成** + **Phase 6 playbook v2 缩减**（2026-05-03）+ **B6 实施完成**（2026-05-04，migration 027/028 + Modak 字体 + SphereNode 数字 badge + getGroupTargetCount 抽象）
+**下一步**（B7 改放最后，2026-05-04 调整）:
+  1. **B2 修 /me /score /artist 紧急 bug** — 含已知 2 个 /me bug（录制"上传中" / 铸造不更新）；前置：用户答 Q2（复现路径 + mint_id/token_id）
+  2. **B4 / B5 并行**（独立可做：音频叠加修复 + 前端韧性三件套）
+  3. **B3 草稿铸造** — 前置 A0+A1 完成
+  4. **Track A 剩余**（A0/A1/A3/A4/A5）+ D2 + E4 / E5 收口
+  5. **B7 端到端冒烟**（最后一次性覆盖所有功能 + 产 bug 清单 → 直接进 completion review）
+  6. **Phase 6 completion review** → Phase 7 OP 主网
+**剩余**: Phase 6 v2（3-5 天）→ Phase 7（OP 主网 + UI 深度重设计 + 音阶系统 + 监控 + 退出准备）
 
 ### Pre-tester gate 完成清单（2026-04-26）
 
@@ -124,6 +127,21 @@
 
 ## 上次成功验证
 
+- 验证: B6 实施完成（A 组 5 球 + B/C 36 球 demo 上线）
+- 时间: 2026-05-04
+- 改动: migration 027/028（tracks 加 published + 5 行循环到 No.1-5 + 安全清旧 mint）/ Modak 字体引入 / SphereNode 删下方 label 加内嵌数字 badge / getGroupTargetCount 抽象 / mock-tracks 5 行补 published
+- 验证证据: TS 0 errors / npm run build 通过 / 浏览器实测 5 球 36 球数字稳定显示
+- 决策推翻: B7 改放最后（避免"测-修-重测"循环）
+
+### 上一轮成功验证（保留）
+
+- 验证: Phase 6 playbook v2 缩减 doc 改写完成（不动代码，准备启动 B6 实施）
+- 时间: 2026-05-03
+- 改动: track-b 13→7 step / overview 时间线 5-6 周→3-5 天 / STATUS / JOURNAL 同步
+- 决策依据: 艺术家 5 条反馈到位 + 投资人只看链上不看 UI
+
+### 上上轮成功验证（保留）
+
 - 验证: Phase 6 Pre-tester gate 4/4 收口 — health 端点线上返回 mintQueue 字段 + 收藏立即变红 + 跨账号 cache 隔离
 - 时间: 2026-04-26
 - commits（4 个一起 push）: `931f45f` useFavorite 乐观 / `c749b67` B1 cache 隔离 / `f0725df` E1 health mintQueue / `8074d18` A2 failure_kind
@@ -158,6 +176,48 @@
 **前端关闭的入口**：
 - /artist 页不显示空投进度标记（或显示为"运营内部"）
 - /me 无草稿上链按钮之前路径关闭（Phase 6 B3 接通前）
+
+## 🚀 Phase 7 候选清单（v2 缩减时迁出，2026-05-03）
+
+来源：Phase 6 v2 playbook 缩减时挂起的工作 + 艺术家 5 条反馈。Phase 6 完结时这份清单进 Phase 7 plan。
+
+### 来自艺术家反馈
+
+| # | 反馈 | P7 step 候选 |
+|---|---|---|
+| 1 | 视觉：漂浮液态感（不要"星球"要"液态细胞"，调透明度）| P7 主页视觉重做 |
+| 2 | 动态：流动 + 更多随机扰动事件 | P7 主页动态扩展 |
+| 3 | 音阶：键盘触发音阶（A=钢琴 1-0 / Q=提琴）| P7 键盘音阶系统（**新功能**，非重设计）|
+| 4 | 音乐圆圈不需要名字，数字代号 | **P6 B6 处理**（不进 P7）|
+| 5 | 按键动画自定义 + 与岛屿/日食原生组件交互 | P7 自定义动画层 |
+
+### 来自 v2 缩减
+
+- **/me /score /artist 深度重设计**（v2 决策 1）
+- **Claude Design 接入**（原 B2.0.7，条件评估）
+- **跨浏览器截图验收**（原 B2.5）
+- **24 张跨浏览器 / 断点截图归档**（原 B2.5）
+
+### 投资人 demo 范围（不变）
+
+投资人只看链上技术 → P7 demo 重点：
+- 主网部署（OP Mainnet）
+- 端到端铸造 / 录制 / 回放跑通
+- 监控 + 告警就绪
+
+## 📌 悬空 TODO（不在 step 内但要追踪）
+
+- **5 首正式曲名上架**（艺术家未给）
+  - B6 已用纯数字 `1~5` 占位（Modak 气球字 badge 内嵌右下角）
+  - 等艺术家给正式曲名后跑 `UPDATE tracks SET title='<正式名>' WHERE week=N`（每首一行 SQL）
+  - 注意：链上已铸造的 NFT metadata 不可改，正式曲名只影响 UPDATE 之后新铸的
+  - 来源：033 log 用户原话 "曲名的话，我要找艺术家的强化一下"
+- **Vercel ISR 缓存等待**：生产部署后 /api/tracks 仍返旧数据最多 5 分钟（revalidate=300），等自然刷新或手动 redeploy
+- **B7 Q3 答案**（启动 B7 时回答）：smoke test 清单来源（沿用 P5 / 新建 P6）
+- **B2 Q2 答案**（启动 B2 时回答）：/me 2 个 bug 复现路径（mint_id / token_id）
+- **Pre-existing lint 错误 2 处**（`comet-system.tsx:40` + `use-layer-wave.ts:37` ref-during-render）
+  - 来源 commit `cd882aa` v82 archipelago refactor，与 B6 无关
+  - verify.sh 会失败但 build 通过；视后续工作中是否顺手修
 
 ## 备注
 

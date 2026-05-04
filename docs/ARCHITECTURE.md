@@ -464,11 +464,11 @@ Patatap spike ✅ / 首页 = 全屏乐器 + 岛屿群 / 无感录制（播放即
 ### Phase 5 — 测试网公开版（Vercel + 域名）
 **第一个可公开访问的版本**，仍在 OP Sepolia 测试网。Vercel 部署 + 域名绑定 / Vercel Cron 配置 / 环境变量迁移 / 基础安全（rate limiting、CORS、错误页面）/ Semi 前端（如果 OAuth 已出）/ 冒烟测试
 
-### Phase 6 — UI 重设计
-全套视觉升级 / 设计师协作 / 配色字体间距动效 / 落地页 / 响应式适配
+### Phase 6 — 稳定性收口 + 端到端跑通（v2 缩减，2026-05-03）
+Pre-tester gate 4 项 ✅ / Track C v2 合约上链 ✅ / 端到端冒烟跑通 + bug 清单收口 / A 组 5 球 + B/C 36 球 demo（B6）/ /me /score /artist 小修 + bug 清扫（B2）/ 草稿铸造按钮接通（B3）/ 音频叠加修复（B4）/ 前端韧性 3 项（B5）。**UI 重设计深度版迁 P7**（详见 STATUS.md "Phase 7 候选清单"段）。
 
-### Phase 7 — OP 主网 + 安全 + 退出准备
-**OP Mainnet 部署** / 冷热钱包分离 / 私钥环境隔离 / 安全审计 / Score Decoder 开源到 GitHub / 低成本维持模式开关
+### Phase 7 — OP 主网 + UI 深度重设计 + 安全 + 退出准备
+**OP Mainnet 部署** / 冷热钱包分离 / 私钥环境隔离 / 安全审计 / Score Decoder 开源到 GitHub / 低成本维持模式开关 / **UI 深度重设计**（主页漂浮液态感 + 动态扩展 + /me /score /artist 重做）/ **键盘音阶系统**（A=钢琴 1-0 / Q=提琴）/ **按键动画自定义** + 与岛屿/日食原生组件交互（艺术家反馈 5 条）
 
 ---
 
