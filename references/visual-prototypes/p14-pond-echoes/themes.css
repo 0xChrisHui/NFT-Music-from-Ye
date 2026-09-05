@@ -1,0 +1,88 @@
+/* A｜月夜声纹图谱：P11 的日式留白与首页水塘语义继续生长。 */
+[data-theme="a"] body {
+  background:
+    radial-gradient(ellipse at 72% 38%, rgba(142, 155, 131, .14), transparent 28rem),
+    linear-gradient(160deg, #080908 0%, #0b100e 55%, #080908 100%);
+}
+[data-theme="a"] .instrument::before {
+  position: absolute; inset: 44% -10% auto; height: 48%; content: ""; opacity: .32;
+  background: repeating-radial-gradient(ellipse at 50% 0%, transparent 0 24px, rgba(227, 220, 207, .12) 25px 26px, transparent 27px 46px);
+  transform: perspective(300px) rotateX(62deg); transform-origin: top;
+}
+[data-theme="a"] .moon::after { position: absolute; inset: 50% -34% auto; height: 50%; border-radius: 0 0 999px 999px; background: rgba(8, 12, 10, .78); content: ""; }
+[data-theme="a"] .moon em { z-index: 2; }
+[data-theme="a"][data-state="playing"] .moon::after { transform: translateY(24%); opacity: .72; }
+
+/* B｜声音护符：Art Deco 的轴线、金属刻度与仪式性对称。 */
+[data-theme="b"] {
+  --ink: #07090e; --surface: rgba(8, 13, 22, .94); --bone: #eee5cf;
+  --muted: #b3a88f; --faint: #756b58; --brass: #d5ad57; --moss: #5b9b89;
+  --line: rgba(213, 173, 87, .25); --display: Futura, "Century Gothic", "PingFang SC", sans-serif;
+}
+[data-theme="b"] body { background: radial-gradient(circle at 72% 44%, #11262a 0, #081118 24rem, #07090e 48rem); }
+[data-theme="b"] h1 { font-weight: 400; line-height: .92; letter-spacing: .05em; text-transform: uppercase; }
+[data-theme="b"] h1 i { margin: .16em 0 0; font-size: .48em; letter-spacing: .22em; }
+[data-theme="b"] .instrument { border-color: rgba(213, 173, 87, .55); clip-path: polygon(24px 0, calc(100% - 24px) 0, 100% 24px, 100% calc(100% - 24px), calc(100% - 24px) 100%, 24px 100%, 0 calc(100% - 24px), 0 24px); }
+[data-theme="b"] .instrument::before,
+[data-theme="b"] .instrument::after { position: absolute; inset: 18px; z-index: 1; border: 1px solid rgba(213, 173, 87, .16); content: ""; pointer-events: none; }
+[data-theme="b"] .instrument::after { inset: 28px; border-style: double; }
+[data-theme="b"] .moon-field::before { position: absolute; width: 82%; aspect-ratio: 1; border: 1px solid var(--line); content: ""; transform: rotate(45deg); }
+[data-theme="b"] .moon { border: 5px double var(--brass); border-radius: 0; background: radial-gradient(circle, #e4ca8c, #ad7631); transform: rotate(45deg); box-shadow: 0 0 0 20px rgba(213, 173, 87, .07), 0 0 80px rgba(213, 173, 87, .18); }
+[data-theme="b"] .moon em { transform: rotate(-45deg); font-size: 68px; font-weight: 500; }
+[data-theme="b"] .orbit { border-radius: 0; transform: rotate(45deg); }
+[data-theme="b"] .orbit-one { border-width: 3px; border-style: double; }
+[data-theme="b"] .waterline { background: linear-gradient(90deg, transparent 5%, var(--brass) 5% 7%, transparent 7% 46%, var(--brass) 46% 54%, transparent 54% 93%, var(--brass) 93% 95%, transparent 95%); }
+[data-theme="b"] .timeline { z-index: 4; }
+[data-theme="b"] .timeline span { border-bottom-color: rgba(213, 173, 87, .34); }
+[data-theme="b"] .timeline .current { border-radius: 0; transform: rotate(45deg); }
+[data-theme="b"] .archive h2 { font-family: var(--mono); font-size: clamp(20px, 3.7vw, 44px); letter-spacing: .12em; text-transform: uppercase; }
+[data-theme="b"][data-state="playing"] .moon { animation-name: talisman; }
+@keyframes talisman { 50% { transform: rotate(225deg) scale(1.04); } }
+
+/* C｜36 段旅程：Editorial 时间轴，以排版、序号和行进方向叙事。 */
+[data-theme="c"] {
+  color-scheme: light; --ink: #e8e1d3; --surface: rgba(240, 234, 220, .7);
+  --bone: #171713; --muted: #5f5a50; --faint: #827b6d; --brass: #a8422d;
+  --moss: #596d62; --line: rgba(23, 23, 19, .23);
+  --display: "Iowan Old Style", Georgia, "Songti SC", serif;
+}
+[data-theme="c"] body { background: linear-gradient(90deg, rgba(23, 23, 19, .025) 1px, transparent 1px) 0 0 / 9vw 100%, #e8e1d3; }
+[data-theme="c"] .grain { opacity: .045; mix-blend-mode: multiply; }
+[data-theme="c"] .directions [aria-current="true"] { background: var(--bone); color: var(--ink); }
+[data-theme="c"] .identity { justify-content: flex-start; }
+[data-theme="c"] h1 { font-size: clamp(58px, 14vw, 112px); line-height: .78; }
+[data-theme="c"] h1::first-line { font-style: italic; }
+[data-theme="c"] h1 i { margin: .28em 0 0; color: var(--brass); font-family: var(--mono); font-size: .2em; font-style: normal; letter-spacing: .12em; }
+[data-theme="c"] .instrument { background: transparent; }
+[data-theme="c"] .moon-field { justify-items: start; padding-left: 10%; }
+[data-theme="c"] .moon-field::before { position: absolute; inset: 50% 7% auto; height: 7px; background: repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px calc(100% / 36)); content: ""; }
+[data-theme="c"] .moon { width: 128px; border: 0; border-radius: 0; background: var(--brass); color: #f4eadb; box-shadow: 18px 18px 0 rgba(23, 23, 19, .12); }
+[data-theme="c"] .moon::before { position: absolute; top: -24px; left: 0; color: var(--bone); font: 10px/1 var(--mono); content: "CURRENT / 10"; }
+[data-theme="c"] .orbit, [data-theme="c"] .waterline { display: none; }
+[data-theme="c"] .timeline { grid-template-columns: repeat(6, 1fr); gap: 0; padding-inline: 7%; }
+[data-theme="c"] .timeline span { min-height: 31px; border: 1px solid var(--line); border-width: 0 0 1px 1px; justify-items: start; padding-left: 6px; }
+[data-theme="c"] .timeline .current { border: 0; border-bottom: 5px solid var(--brass); border-radius: 0; background: var(--bone); color: var(--ink); }
+[data-theme="c"] .play { border-radius: 0; }
+[data-theme="c"] .archive { display: grid; grid-template-columns: 1fr; }
+[data-theme="c"] .archive h2 { padding-left: 12%; border-left: 1px solid var(--brass); font-style: italic; }
+[data-theme="c"] .lab { background: rgba(232, 225, 211, .96); }
+[data-theme="c"] .lab select { background: var(--ink); }
+[data-theme="c"][data-state="playing"] .moon { animation-name: journey; }
+@keyframes journey { 50% { transform: translateX(42px); box-shadow: -18px 18px 0 rgba(23, 23, 19, .12); } }
+
+@media (min-width: 760px) {
+  [data-theme="b"] .moon em { font-size: 98px; }
+  [data-theme="c"] main { grid-template-columns: .82fr 1.18fr; }
+  [data-theme="c"] .identity { padding-top: 96px; }
+  [data-theme="c"] .timeline { grid-template-columns: repeat(12, 1fr); }
+  [data-theme="c"] .archive { grid-template-columns: 1fr 2.4fr; gap: 5vw; }
+  [data-theme="c"] .archive header { align-content: start; }
+  [data-theme="c"] .archive h2 { margin-top: 0; }
+  [data-theme="c"] .archive > p { grid-column: 2; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="b"][data-state="playing"] .moon { transform: rotate(45deg); }
+  [data-theme="b"] .moon em { transform: rotate(-45deg); }
+  [data-theme="c"][data-state="playing"] .moon { border-left: 8px solid var(--bone); }
+}

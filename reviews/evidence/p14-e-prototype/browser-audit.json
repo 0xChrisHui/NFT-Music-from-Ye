@@ -1,0 +1,540 @@
+{
+  "passed": true,
+  "capturedAt": "2026-09-05T17:33:14.323Z",
+  "browser": "本机 Microsoft Edge headless（DOM 按钮点击，启动前保持 idle）",
+  "initial": {
+    "state": "idle",
+    "viewport": [
+      375,
+      844
+    ],
+    "horizontalOverflow": 0,
+    "bodyFontPx": 16,
+    "playTarget": [
+      116,
+      44
+    ],
+    "autoContextCreated": false,
+    "recipe": "ER81BTKWSDL7QAXTPCV28IGGYFVPSTIERCMR",
+    "wallet": "0x19da4b170dF5CcA47414b04f04a24f67E2E6bA54",
+    "crossfadeMs": 60
+  },
+  "fourthSegment": {
+    "state": "playing",
+    "positionMs": 22560,
+    "durationMs": 269900.00000400003,
+    "currentIndex": 3,
+    "currentKey": "1"
+  },
+  "playedSegments": 4,
+  "boundaryAnalysis": {
+    "count": 35,
+    "peak": 0.358074,
+    "peakBoundary": "I→E",
+    "clipped": false,
+    "boundaries": [
+      {
+        "position": 1,
+        "label": "E→R",
+        "peak": 0.239695
+      },
+      {
+        "position": 2,
+        "label": "R→8",
+        "peak": 0.093209
+      },
+      {
+        "position": 3,
+        "label": "8→1",
+        "peak": 0.071497
+      },
+      {
+        "position": 4,
+        "label": "1→B",
+        "peak": 0.115494
+      },
+      {
+        "position": 5,
+        "label": "B→T",
+        "peak": 0.277522
+      },
+      {
+        "position": 6,
+        "label": "T→K",
+        "peak": 0.182211
+      },
+      {
+        "position": 7,
+        "label": "K→W",
+        "peak": 0.147507
+      },
+      {
+        "position": 8,
+        "label": "W→S",
+        "peak": 0.084649
+      },
+      {
+        "position": 9,
+        "label": "S→D",
+        "peak": 0.298452
+      },
+      {
+        "position": 10,
+        "label": "D→L",
+        "peak": 0.293296
+      },
+      {
+        "position": 11,
+        "label": "L→7",
+        "peak": 0.144681
+      },
+      {
+        "position": 12,
+        "label": "7→Q",
+        "peak": 0.224347
+      },
+      {
+        "position": 13,
+        "label": "Q→A",
+        "peak": 0.161118
+      },
+      {
+        "position": 14,
+        "label": "A→X",
+        "peak": 0.129584
+      },
+      {
+        "position": 15,
+        "label": "X→T",
+        "peak": 0.209237
+      },
+      {
+        "position": 16,
+        "label": "T→P",
+        "peak": 0.181322
+      },
+      {
+        "position": 17,
+        "label": "P→C",
+        "peak": 0.356798
+      },
+      {
+        "position": 18,
+        "label": "C→V",
+        "peak": 0.244196
+      },
+      {
+        "position": 19,
+        "label": "V→2",
+        "peak": 0.110208
+      },
+      {
+        "position": 20,
+        "label": "2→8",
+        "peak": 0.086792
+      },
+      {
+        "position": 21,
+        "label": "8→I",
+        "peak": 0.214293
+      },
+      {
+        "position": 22,
+        "label": "I→G",
+        "peak": 0.27092
+      },
+      {
+        "position": 23,
+        "label": "G→G",
+        "peak": 0.277362
+      },
+      {
+        "position": 24,
+        "label": "G→Y",
+        "peak": 0.141945
+      },
+      {
+        "position": 25,
+        "label": "Y→F",
+        "peak": 0.224021
+      },
+      {
+        "position": 26,
+        "label": "F→V",
+        "peak": 0.355768
+      },
+      {
+        "position": 27,
+        "label": "V→P",
+        "peak": 0.133979
+      },
+      {
+        "position": 28,
+        "label": "P→S",
+        "peak": 0.319418
+      },
+      {
+        "position": 29,
+        "label": "S→T",
+        "peak": 0.235981
+      },
+      {
+        "position": 30,
+        "label": "T→I",
+        "peak": 0.217653
+      },
+      {
+        "position": 31,
+        "label": "I→E",
+        "peak": 0.358074
+      },
+      {
+        "position": 32,
+        "label": "E→R",
+        "peak": 0.239695
+      },
+      {
+        "position": 33,
+        "label": "R→C",
+        "peak": 0.221815
+      },
+      {
+        "position": 34,
+        "label": "C→M",
+        "peak": 0.244086
+      },
+      {
+        "position": 35,
+        "label": "M→R",
+        "peak": 0.189412
+      }
+    ]
+  },
+  "clipSignals": [
+    {
+      "key": "A",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -25.7,
+      "peak": 0.493835,
+      "leadingSilenceMs": 1088.667,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "B",
+      "durationMs": 7555.541667,
+      "rmsDbfs": -17.564,
+      "peak": 0.623249,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "C",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -17.209,
+      "peak": 0.657979,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "D",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -17.81,
+      "peak": 0.59798,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "E",
+      "durationMs": 7555.541667,
+      "rmsDbfs": -17.345,
+      "peak": 0.595935,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "F",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -16.985,
+      "peak": 0.584948,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "G",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -20.688,
+      "peak": 0.562134,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "H",
+      "durationMs": 7555.541667,
+      "rmsDbfs": -21.764,
+      "peak": 0.826197,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "I",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -23.336,
+      "peak": 0.341685,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "J",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -24.134,
+      "peak": 0.425245,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "K",
+      "durationMs": 7555.541667,
+      "rmsDbfs": -24.109,
+      "peak": 0.408887,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "L",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -21.048,
+      "peak": 0.776764,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "M",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -27.964,
+      "peak": 0.263588,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "N",
+      "durationMs": 7555.541667,
+      "rmsDbfs": -27.723,
+      "peak": 0.190252,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "O",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -26.127,
+      "peak": 0.232391,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "P",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -24.943,
+      "peak": 0.330973,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "Q",
+      "durationMs": 7555.541667,
+      "rmsDbfs": -25.563,
+      "peak": 0.254272,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "R",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -25.754,
+      "peak": 0.274697,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "S",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -25.035,
+      "peak": 0.351074,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "T",
+      "durationMs": 7555.541667,
+      "rmsDbfs": -18.987,
+      "peak": 0.516357,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "U",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -25.785,
+      "peak": 0.286133,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "V",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -24.453,
+      "peak": 0.381359,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "W",
+      "durationMs": 7555.541667,
+      "rmsDbfs": -34.308,
+      "peak": 0.17926,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "X",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -29.981,
+      "peak": 0.243721,
+      "leadingSilenceMs": 0.021,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "Y",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -27.885,
+      "peak": 0.240516,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "Z",
+      "durationMs": 7555.541667,
+      "rmsDbfs": -27.495,
+      "peak": 0.258392,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "0",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -27.123,
+      "peak": 0.242584,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "1",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -27.893,
+      "peak": 0.241096,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "2",
+      "durationMs": 7555.541667,
+      "rmsDbfs": -27.613,
+      "peak": 0.232063,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "3",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -29.029,
+      "peak": 0.218811,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "4",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -27.32,
+      "peak": 0.271515,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "5",
+      "durationMs": 7555.541667,
+      "rmsDbfs": -26.948,
+      "peak": 0.307281,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "6",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -27.047,
+      "peak": 0.289071,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "7",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -28.877,
+      "peak": 0.286142,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "8",
+      "durationMs": 7555.541667,
+      "rmsDbfs": -30.039,
+      "peak": 0.185308,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 0
+    },
+    {
+      "key": "9",
+      "durationMs": 7555.5625,
+      "rmsDbfs": -51.085,
+      "peak": 0.020753,
+      "leadingSilenceMs": 0,
+      "trailingSilenceMs": 1727.063
+    }
+  ],
+  "reducedMotion": {
+    "animationName": "none",
+    "stateSignal": "double"
+  },
+  "stateContract": [
+    {
+      "state": "idle",
+      "rendered": "idle",
+      "status": "等待你的触碰"
+    },
+    {
+      "state": "loading",
+      "rendered": "loading",
+      "status": "正在解码永久片段…"
+    },
+    {
+      "state": "playing",
+      "rendered": "playing",
+      "status": "回声正在穿过池面"
+    },
+    {
+      "state": "paused",
+      "rendered": "paused",
+      "status": "回声停驻在这一刻"
+    },
+    {
+      "state": "ended",
+      "rendered": "ended",
+      "status": "36 段旅程已经抵岸"
+    },
+    {
+      "state": "error",
+      "rendered": "error",
+      "status": "声音暂不可用，配方仍可读取"
+    }
+  ],
+  "consoleErrors": []
+}

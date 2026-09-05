@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="a">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#080908" />
+    <title>Pond Echoes · P14 E0 原型</title>
+    <meta name="description" content="同一真实钱包声音配方的三种视觉方向。" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" />
+    <link rel="stylesheet" href="./base.css" />
+    <link rel="stylesheet" href="./themes.css" />
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="topbar">
+      <a href="../index.html" class="back">← 返回原型集</a>
+      <p>POND ECHOES · E0</p>
+      <button id="copy" type="button">复制配方</button>
+    </header>
+
+    <nav class="directions" aria-label="视觉方向">
+      <button data-theme-button="a" type="button"><b>A</b><span>月夜声纹图谱</span></button>
+      <button data-theme-button="b" type="button"><b>B</b><span>声音护符</span></button>
+      <button data-theme-button="c" type="button"><b>C</b><span>36 段旅程</span></button>
+    </nav>
+
+    <main>
+      <section class="identity" aria-labelledby="title">
+        <p class="kicker">钱包生成的永久声音作品 · 01</p>
+        <h1 id="title">Pond Echo<br /><i>19da—ba54</i></h1>
+        <p class="lede">你的首枚 Score 在池中留下回声。36 个确定性片段，组成只属于这个 origin wallet 的四分半旅程。</p>
+        <dl>
+          <div><dt>ORIGIN</dt><dd>0x19da…ba54</dd></div>
+          <div><dt>SOURCE</dt><dd>Score #1</dd></div>
+          <div><dt>DURATION</dt><dd>04:29.9</dd></div>
+        </dl>
+      </section>
+
+      <section class="instrument" aria-label="Pond Echo 播放器">
+        <div class="moon-field" aria-hidden="true">
+          <span class="orbit orbit-one"></span><span class="orbit orbit-two"></span>
+          <span class="moon"><em id="current-glyph">E</em></span>
+          <span class="waterline"></span>
+        </div>
+        <div class="timeline" id="timeline" aria-label="36 段配方，当前段以位置和形状标记"></div>
+        <div class="transport">
+          <button id="play" class="play" type="button" aria-describedby="status">开始播放</button>
+          <div class="progress-copy">
+            <p id="status" aria-live="polite">等待你的触碰</p>
+            <p><span id="position">00:00</span><span aria-hidden="true"> / </span><span>04:29</span> · <span id="segment">01 / 36</span></p>
+          </div>
+          <div class="progress" aria-hidden="true"><span id="progress-bar"></span></div>
+        </div>
+      </section>
+
+      <section class="archive" aria-labelledby="recipe-title">
+        <header><p>永久配方</p><span>RECIPE V1 · 36 PARTS</span></header>
+        <h2 id="recipe-title">ER81BT · KWSDL7 · QAXTPC · V28IGG · YFVPST · IERCMR</h2>
+        <p>字符不是装饰：当前段同时由放大字形、序号、形状和进度标出。播放器只在点击后载入本地真实母带。</p>
+      </section>
+    </main>
+
+    <details class="lab">
+      <summary>原型证据控制</summary>
+      <label>视觉方向<select id="theme-preview"><option value="a">A · 月夜声纹图谱</option><option value="b">B · 声音护符</option><option value="c">C · 36 段旅程</option></select></label>
+      <label>状态预览<select id="state-preview"><option>idle</option><option>loading</option><option>playing</option><option>paused</option><option>ended</option><option>error</option></select></label>
+      <p>60ms 等功率 crossfade · 无自动播放 · 真实 /public/the36 音频</p>
+    </details>
+
+    <script src="./data.js"></script>
+    <script src="./audio.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
