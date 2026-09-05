@@ -30,6 +30,7 @@ contract WalletRecipeNFT is ERC721URIStorage, ERC721Enumerable, AccessControl, O
     error EmptySymbol();
     error EmptyContractURI();
     error EmptyTokenURI();
+    error InvalidPermanentURI();
     error ZeroAdmin();
     error ZeroMinter();
     error ZeroOrigin();
@@ -42,6 +43,7 @@ contract WalletRecipeNFT is ERC721URIStorage, ERC721Enumerable, AccessControl, O
         if (bytes(name_).length == 0) revert EmptyName();
         if (bytes(symbol_).length == 0) revert EmptySymbol();
         if (bytes(contractUri_).length == 0) revert EmptyContractURI();
+        _requirePermanentUri(contractUri_);
         if (admin_ == address(0)) revert ZeroAdmin();
         if (minter_ == address(0)) revert ZeroMinter();
         if (admin_ == minter_) revert RolesMustDiffer();
@@ -62,6 +64,7 @@ contract WalletRecipeNFT is ERC721URIStorage, ERC721Enumerable, AccessControl, O
     {
         if (originWallet == address(0)) revert ZeroOrigin();
         if (bytes(tokenUri).length == 0) revert EmptyTokenURI();
+        _requirePermanentUri(tokenUri);
 
         uint256 existingTokenId = tokenIdByOrigin[originWallet];
         if (existingTokenId != 0) {
@@ -81,6 +84,20 @@ contract WalletRecipeNFT is ERC721URIStorage, ERC721Enumerable, AccessControl, O
     /// ERC-7572 collection metadata；构造后没有修改入口。
     function contractURI() external view returns (string memory) {
         return _collectionUri;
+    }
+
+    function _requirePermanentUri(string memory uri) private pure {
+        bytes memory value = bytes(uri);
+        if (
+            value.length != 48 || value[0] != "a" || value[1] != "r" || value[2] != ":"
+                || value[3] != "/" || value[4] != "/"
+        ) revert InvalidPermanentURI();
+        for (uint256 i = 5; i < value.length; ++i) {
+            bytes1 char = value[i];
+            bool valid = (char >= "A" && char <= "Z") || (char >= "a" && char <= "z")
+                || (char >= "0" && char <= "9") || char == "_" || char == "-";
+            if (!valid) revert InvalidPermanentURI();
+        }
     }
 
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {

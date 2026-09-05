@@ -15,6 +15,7 @@ contract DeployWalletRecipeHarness is DeployWalletRecipe {
 }
 
 contract DeployWalletRecipeTest is Test {
+    string private constant COLLECTION_URI = "ar://CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC";
     DeployWalletRecipeHarness private script;
 
     address private admin = address(0xA11CE);
@@ -25,11 +26,11 @@ contract DeployWalletRecipeTest is Test {
     }
 
     function testDeploysFrozenIdentityAndRoles() public {
-        WalletRecipeNFT nft = script.deployForTest(admin, minter, "ar://collection");
+        WalletRecipeNFT nft = script.deployForTest(admin, minter, COLLECTION_URI);
 
         assertEq(nft.name(), "Pond Echoes");
         assertEq(nft.symbol(), "ECHO");
-        assertEq(nft.contractURI(), "ar://collection");
+        assertEq(nft.contractURI(), COLLECTION_URI);
         assertEq(nft.owner(), admin);
         assertTrue(nft.hasRole(nft.DEFAULT_ADMIN_ROLE(), admin));
         assertTrue(nft.hasRole(nft.MINTER_ROLE(), minter));
@@ -41,20 +42,23 @@ contract DeployWalletRecipeTest is Test {
         script.deployForTest(admin, minter, "");
 
         vm.expectRevert(WalletRecipeNFT.ZeroAdmin.selector);
-        script.deployForTest(address(0), minter, "ar://collection");
+        script.deployForTest(address(0), minter, COLLECTION_URI);
 
         vm.expectRevert(WalletRecipeNFT.ZeroMinter.selector);
-        script.deployForTest(admin, address(0), "ar://collection");
+        script.deployForTest(admin, address(0), COLLECTION_URI);
 
         vm.expectRevert(WalletRecipeNFT.RolesMustDiffer.selector);
-        script.deployForTest(admin, admin, "ar://collection");
+        script.deployForTest(admin, admin, COLLECTION_URI);
     }
 
     function testDirectConstructorRejectsEmptyNameAndSymbol() public {
         vm.expectRevert(WalletRecipeNFT.EmptyName.selector);
-        new WalletRecipeNFT("", "ECHO", "ar://collection", admin, minter);
+        new WalletRecipeNFT("", "ECHO", COLLECTION_URI, admin, minter);
 
         vm.expectRevert(WalletRecipeNFT.EmptySymbol.selector);
-        new WalletRecipeNFT("Pond Echoes", "", "ar://collection", admin, minter);
+        new WalletRecipeNFT("Pond Echoes", "", COLLECTION_URI, admin, minter);
+
+        vm.expectRevert(WalletRecipeNFT.InvalidPermanentURI.selector);
+        new WalletRecipeNFT("Pond Echoes", "ECHO", "https://example.com/collection", admin, minter);
     }
 }

@@ -23,8 +23,9 @@ contract WalletRecipeNFTTest is Test {
     address private collector = address(0xCAFE);
     address private outsider = address(0xDEAD);
 
-    string private constant TOKEN_URI = "ar://token-metadata";
-    string private constant COLLECTION_URI = "ar://collection-metadata";
+    string private constant TOKEN_URI = "ar://TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT";
+    string private constant SECOND_URI = "ar://SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS";
+    string private constant COLLECTION_URI = "ar://CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC";
 
     event WalletRecipeMinted(address indexed originWallet, uint256 indexed tokenId);
 
@@ -65,7 +66,7 @@ contract WalletRecipeNFTTest is Test {
         address secondOrigin = address(0xBEEF);
         vm.startPrank(minter);
         assertEq(nft.mintToOrigin(origin, TOKEN_URI), 1);
-        assertEq(nft.mintToOrigin(secondOrigin, "ar://second"), 2);
+        assertEq(nft.mintToOrigin(secondOrigin, SECOND_URI), 2);
         vm.stopPrank();
 
         assertEq(nft.ownerOf(2), secondOrigin);
@@ -80,7 +81,7 @@ contract WalletRecipeNFTTest is Test {
         vm.expectRevert(abi.encodeWithSelector(WalletRecipeNFT.OriginAlreadyMinted.selector, origin, 1));
         nft.mintToOrigin(origin, TOKEN_URI);
         vm.expectRevert(abi.encodeWithSelector(WalletRecipeNFT.OriginAlreadyMinted.selector, origin, 1));
-        nft.mintToOrigin(origin, "ar://different");
+        nft.mintToOrigin(origin, SECOND_URI);
         vm.stopPrank();
     }
 
@@ -93,7 +94,7 @@ contract WalletRecipeNFTTest is Test {
         nft.mintToOrigin(lowercaseAddress, TOKEN_URI);
         vm.prank(minter);
         vm.expectRevert();
-        nft.mintToOrigin(checksumAddress, "ar://second");
+        nft.mintToOrigin(checksumAddress, SECOND_URI);
     }
 
     function testRejectsUnauthorizedZeroOriginAndEmptyUri() public {
@@ -106,6 +107,9 @@ contract WalletRecipeNFTTest is Test {
         nft.mintToOrigin(address(0), TOKEN_URI);
         vm.expectRevert(WalletRecipeNFT.EmptyTokenURI.selector);
         nft.mintToOrigin(origin, "");
+
+        vm.expectRevert(WalletRecipeNFT.InvalidPermanentURI.selector);
+        nft.mintToOrigin(origin, "https://example.com/token");
         vm.stopPrank();
     }
 
@@ -140,7 +144,7 @@ contract WalletRecipeNFTTest is Test {
 
         vm.prank(minter);
         vm.expectRevert();
-        nft.mintToOrigin(origin, "ar://again");
+        nft.mintToOrigin(origin, SECOND_URI);
     }
 
     function testAdminCanGrantAndRevokeMinterImmediately() public {
@@ -154,7 +158,7 @@ contract WalletRecipeNFTTest is Test {
         nft.revokeRole(minterRole, outsider);
         vm.prank(outsider);
         vm.expectRevert();
-        nft.mintToOrigin(address(0x1234), "ar://blocked");
+        nft.mintToOrigin(address(0x1234), SECOND_URI);
     }
 
     function testInterfacesAndOmittedCapabilities() public {
@@ -181,7 +185,7 @@ contract WalletRecipeNFTTest is Test {
     function testFuzzOriginUniqueAfterArbitraryTransfers(address fuzzOrigin, address firstOwner, address secondOwner)
         public
     {
-        vm.assume(fuzzOrigin != address(0));
+        vm.assume(fuzzOrigin != address(0) && fuzzOrigin.code.length == 0);
         vm.assume(firstOwner != address(0) && firstOwner.code.length == 0);
         vm.assume(secondOwner != address(0) && secondOwner.code.length == 0);
 
@@ -197,6 +201,6 @@ contract WalletRecipeNFTTest is Test {
         assertEq(nft.tokenIdByOrigin(fuzzOrigin), 1);
         vm.prank(minter);
         vm.expectRevert();
-        nft.mintToOrigin(fuzzOrigin, "ar://duplicate");
+        nft.mintToOrigin(fuzzOrigin, SECOND_URI);
     }
 }
