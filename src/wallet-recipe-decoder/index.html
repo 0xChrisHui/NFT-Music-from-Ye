@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Pond Echoes · Permanent Decoder v1</title>
+  <style>
+    :root{--ink:#070706;--bone:#e3dccf;--quiet:#918b80;--brass:#c3a15f;--moss:#65705c}
+    *{box-sizing:border-box}body{margin:0;overflow-x:hidden;background:var(--ink);color:var(--bone);font:16px/1.55 Georgia,serif}
+    body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;background:radial-gradient(circle at 50% 24%,#526052 0,transparent 35%),repeating-radial-gradient(circle at 50% 36%,transparent 0 31px,#c3a15f18 32px 33px)}
+    main{position:relative;width:min(920px,100%);min-height:100vh;margin:auto;padding:clamp(28px,6vw,72px) clamp(20px,5vw,64px)}
+    .eyebrow,.mono{font:11px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.16em;text-transform:uppercase}
+    h1{max-width:620px;margin:.4em 0 .25em;font-weight:400;font-size:clamp(48px,9vw,104px);line-height:.85;letter-spacing:-.04em}
+    .lead{max-width:560px;overflow-wrap:anywhere;color:var(--quiet);font-size:clamp(17px,2vw,21px)}
+    .pond{position:relative;display:grid;place-items:center;width:min(76vw,420px);aspect-ratio:1;margin:42px auto}
+    .ring{position:absolute;border:1px solid #c3a15f40;border-radius:50%;animation:breathe 7s ease-in-out infinite}
+    .ring:nth-child(1){inset:5%}.ring:nth-child(2){inset:20%;animation-delay:-2s}.ring:nth-child(3){inset:35%;animation-delay:-4s}
+    .current{position:relative;text-align:center;font-size:clamp(62px,15vw,132px);font-weight:400;color:var(--brass)}
+    .position{position:absolute;bottom:23%;color:var(--quiet)}
+    .controls{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:22px}
+    button{min-height:48px;border:1px solid #e3dccf55;border-radius:99px;padding:0 24px;background:transparent;color:var(--bone);font:inherit;cursor:pointer}
+    button.primary{border-color:var(--brass);background:var(--brass);color:var(--ink)}button:disabled{opacity:.38;cursor:not-allowed}
+    button:focus-visible,a:focus-visible{outline:2px solid var(--bone);outline-offset:4px}
+    progress{display:block;width:100%;height:3px;border:0;background:#e3dccf24}progress::-webkit-progress-bar{background:#e3dccf24}progress::-webkit-progress-value{background:var(--brass)}progress::-moz-progress-bar{background:var(--brass)}
+    .status{min-height:3em;margin:14px 0;color:var(--quiet);text-align:center}.error{color:#e4a58c}
+    .recipe{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;margin:30px 0}
+    .step{display:grid;place-items:center;min-height:44px;border-bottom:1px solid #e3dccf24;color:var(--quiet);font-family:ui-monospace,monospace}
+    .step[data-state="current"]{border-color:var(--brass);color:var(--bone);background:#c3a15f18}.step[data-state="past"]{color:var(--moss)}
+    details{margin-top:42px;border-top:1px solid #e3dccf2b;padding-top:18px}summary{min-height:44px;cursor:pointer}.evidence{overflow-wrap:anywhere;color:var(--quiet)}
+    a{color:var(--bone);text-underline-offset:4px}@keyframes breathe{50%{transform:scale(1.025);opacity:.55}}
+    @media(max-width:560px){.recipe{grid-template-columns:repeat(6,1fr)}.pond{margin:18px auto 28px}.controls button{flex:1 1 100%;width:100%}}
+    @media(prefers-reduced-motion:reduce){.ring{animation:none}}
+  </style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">Ripples in the Pond · permanent artifact</p>
+  <h1>Pond<br>Echoes</h1>
+  <p class="lead">A 36-part score derived from one origin wallet. Decoder v1 reads only the permanent clip manifest named in this URL.</p>
+  <section aria-labelledby="player-title">
+    <h2 id="player-title" class="eyebrow">Sequential performance</h2>
+    <div class="pond" aria-hidden="true"><i class="ring"></i><i class="ring"></i><i class="ring"></i><b id="current" class="current">·</b><span id="position" class="position mono">00 / 36</span></div>
+    <div class="controls"><button id="load" class="primary">Load 36 clips</button><button id="pause" disabled>Pause</button><button id="replay" disabled>Replay</button></div>
+    <progress id="progress" max="1" value="0" aria-label="Playback progress"></progress>
+    <p id="status" class="status" role="status" aria-live="polite">Ready to load. Audio never starts automatically.</p>
+    <div id="recipe" class="recipe" aria-label="36-part recipe"></div>
+  </section>
+  <details><summary>Permanent evidence and v1 rules</summary><div class="evidence">
+    <p>Recipe v1 accepts exactly 36 characters from <span class="mono">A–Z 0–9</span>. Adjacent clips overlap by 60ms with equal-power fades. The recipe cannot be edited or rerolled here.</p>
+    <p><strong>Recipe</strong><br><code id="recipe-value"></code></p>
+    <p><strong>Clip manifest</strong><br><a id="manifest-link" rel="noreferrer">Open permanent JSON</a></p>
+  </div></details>
+</main>
+<script>
+"use strict";
+const CHARSET="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",FADE=.06,TIMEOUT=12000;
+const GATEWAYS=["https://arweave.net","https://ario.permagate.io"];
+const $=id=>document.getElementById(id),ui={load:$("load"),pause:$("pause"),replay:$("replay"),status:$("status"),progress:$("progress"),current:$("current"),position:$("position")};
+let ctx,buffers=new Map(),timeline=[],sources=[],state="idle",offset=0,startedAt=0,raf=0,loadController=null;
+function fail(message){stopSources();state="error";ui.status.className="status error";ui.status.textContent=message;ui.load.disabled=false;ui.load.textContent="Try loading again"}
+function params(){const p=new URL(location.href).searchParams,v=p.get("v"),recipe=p.get("recipe"),clips=p.get("clips");if(v!=="1")throw Error("Decoder requires v=1.");if(!recipe||recipe.length!==36||[...recipe].some(k=>!CHARSET.includes(k)))throw Error("Recipe must contain 36 uppercase A–Z / 0–9 characters.");if(!clips||!/^[A-Za-z0-9_-]{43}$/.test(clips))throw Error("Clip manifest transaction id is invalid.");return{recipe,clips}}
+function timeoutSignal(parent){const c=new AbortController(),timer=setTimeout(()=>c.abort(),TIMEOUT);parent&&parent.addEventListener("abort",()=>c.abort(),{once:true});return{signal:c.signal,done:()=>clearTimeout(timer)}}
+async function fetchPermanent(txid,kind,parent){let last;for(const gateway of GATEWAYS){const t=timeoutSignal(parent);try{const r=await fetch(`${gateway}/${txid}`,{signal:t.signal,cache:"force-cache"});if(!r.ok)throw Error(`HTTP ${r.status}`);return kind==="json"?await r.json():await r.arrayBuffer()}catch(e){last=e}finally{t.done()}}throw Error(`Both permanent gateways failed: ${last instanceof Error?last.message:"network error"}`)}
+async function digestHex(data){return[...new Uint8Array(await crypto.subtle.digest("SHA-256",data))].map(v=>v.toString(16).padStart(2,"0")).join("")}
+function exactKeys(value,keys){return value&&typeof value==="object"&&!Array.isArray(value)&&Object.keys(value).sort().join("|")===[...keys].sort().join("|")}
+async function validateManifest(raw){const fields=["version","charset","count","clips","generatedAt","manifestSha256"];if(!exactKeys(raw,fields)||raw.version!==1||raw.charset!==CHARSET||raw.count!==36||!Array.isArray(raw.clips)||raw.clips.length!==36||!/^[0-9a-f]{64}$/.test(raw.manifestSha256))throw Error("Manifest v1 header is invalid.");const byKey=new Map();raw.clips.forEach((clip,i)=>{const key=CHARSET[i],clipFields=["key","fileName","bytes","mimeType","sha256","sampleRate","channels","frameCount","durationMs","arweaveTxId"];if(!exactKeys(clip,clipFields)||clip.key!==key||clip.fileName!==`${key}.mp3`||clip.mimeType!=="audio/mpeg"||!Number.isInteger(clip.bytes)||clip.bytes<=0||clip.sampleRate!==48000||clip.channels!==2||!Number.isInteger(clip.frameCount)||clip.frameCount<=0||!Number.isFinite(clip.durationMs)||clip.durationMs<=FADE*1000||!/^[0-9a-f]{64}$/.test(clip.sha256)||!/^[A-Za-z0-9_-]{43}$/.test(clip.arweaveTxId||""))throw Error(`Manifest clip ${key} is invalid.`);byKey.set(key,clip)});const identity={version:raw.version,charset:raw.charset,count:raw.count,clips:raw.clips},hash=await digestHex(new TextEncoder().encode(JSON.stringify(identity)));if(hash!==raw.manifestSha256)throw Error("Manifest identity SHA-256 does not match its contents.");return byKey}
+async function pool(items,limit,worker){let next=0,done=0;async function run(){while(next<items.length){const item=items[next++];await worker(item);done++;ui.status.textContent=`Loading and decoding ${done} / ${items.length} unique clips…`}}await Promise.all(Array.from({length:Math.min(limit,items.length)},run))}
+function makeTimeline(recipe){let cursor=0;timeline=[...recipe].map((key,index)=>{const buffer=buffers.get(key),entry={key,index,start:cursor,end:cursor+buffer.duration,buffer};cursor=entry.end-FADE;return entry});return timeline[timeline.length-1].end}
+function gainAt(entry,local){let gain=1;if(entry.index>0&&local<FADE)gain=Math.sin(local/FADE*Math.PI/2);if(entry.index<35&&local>entry.buffer.duration-FADE)gain=Math.cos((local-entry.buffer.duration+FADE)/FADE*Math.PI/2);return Math.max(0,gain)}
+function curve(kind,start,end){const n=32,a=new Float32Array(n);for(let i=0;i<n;i++){const x=start+(end-start)*i/(n-1);a[i]=kind==="in"?Math.sin(x*Math.PI/2):Math.cos(x*Math.PI/2)}return a}
+function scheduleEntry(entry,at){if(entry.end<=offset)return;const local=Math.max(0,offset-entry.start),when=at+Math.max(0,entry.start-offset),duration=entry.buffer.duration-local,source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=entry.buffer;gain.gain.setValueAtTime(gainAt(entry,local),when);const fadeInEnd=Math.min(FADE,entry.buffer.duration);if(entry.index>0&&local<fadeInEnd)gain.gain.setValueCurveAtTime(curve("in",local/FADE,1),when,fadeInEnd-local);const fadeOutStart=entry.buffer.duration-FADE;if(entry.index<35&&local<entry.buffer.duration){const curveStart=Math.max(local,fadeOutStart),curveWhen=when+curveStart-local;gain.gain.setValueCurveAtTime(curve("out",(curveStart-fadeOutStart)/FADE,1),curveWhen,entry.buffer.duration-curveStart)}source.connect(gain).connect(ctx.destination);source.start(when,local,duration);sources.push(source)}
+function stopSources(){sources.forEach(s=>{try{s.stop()}catch{}});sources=[];cancelAnimationFrame(raf)}
+function elapsed(){return Math.min(timeline.at(-1)?.end||0,offset+(ctx?ctx.currentTime-startedAt:0))}
+function paint(time){const total=timeline.at(-1)?.end||1;let index=0;for(let i=1;i<timeline.length;i++){if(timeline[i].start<=time)index=i;else break}ui.progress.value=time/total;ui.current.textContent=timeline[index]?.key||"·";ui.position.textContent=`${String(index+1).padStart(2,"0")} / 36`;document.querySelectorAll(".step").forEach((el,i)=>el.dataset.state=i===index?"current":i<index?"past":"future")}
+function tick(){const time=elapsed();paint(time);if(time>=timeline.at(-1).end-.01){stopSources();state="completed";offset=timeline.at(-1).end;ui.status.textContent="Performance complete. The same recipe is ready to replay.";ui.pause.disabled=true;ui.replay.disabled=false;return}raf=requestAnimationFrame(tick)}
+async function play(from=offset){await ctx.resume();stopSources();offset=from;startedAt=ctx.currentTime+.05;timeline.forEach(entry=>scheduleEntry(entry,startedAt));state="playing";ui.pause.disabled=false;ui.pause.textContent="Pause";ui.replay.disabled=false;ui.status.className="status";ui.status.textContent="Playing the fixed 36-part recipe.";raf=requestAnimationFrame(tick)}
+async function load(){try{ui.load.disabled=true;ui.status.className="status";ui.status.textContent="Reading permanent manifest…";loadController?.abort();loadController=new AbortController();const {recipe,clips}=params(),manifest=await validateManifest(await fetchPermanent(clips,"json",loadController.signal));ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();const keys=[...new Set(recipe)];buffers.clear();await pool(keys,6,async key=>{const clip=manifest.get(key),data=await fetchPermanent(clip.arweaveTxId,"bytes",loadController.signal);if(await digestHex(data)!==clip.sha256)throw Error(`Clip ${key} failed SHA-256 verification.`);const decoded=await ctx.decodeAudioData(data.slice(0));if(Math.abs(decoded.duration*1000-clip.durationMs)>60)throw Error(`Clip ${key} duration does not match manifest.`);buffers.set(key,decoded)});makeTimeline(recipe);ui.load.textContent="Loaded";ui.pause.disabled=false;ui.replay.disabled=false;ui.status.textContent=`Loaded ${keys.length} unique clips. Press Play to begin.`;ui.pause.textContent="Play";state="ready"}catch(e){fail(e instanceof Error?e.message:"Unable to load permanent audio.")}}
+ui.load.addEventListener("click",load);ui.pause.addEventListener("click",()=>{if(state==="playing"){offset=elapsed();stopSources();state="paused";ui.pause.textContent="Resume";ui.status.textContent="Paused at the exact performance position."}else if(["ready","paused"].includes(state))play().catch(e=>fail(e.message))});ui.replay.addEventListener("click",()=>play(0).catch(e=>fail(e.message)));
+try{const p=params();$("recipe-value").textContent=p.recipe;$("manifest-link").href=`${GATEWAYS[0]}/${p.clips}`;$("manifest-link").textContent=`ar://${p.clips}`;[...p.recipe].forEach((key,i)=>{const el=document.createElement("span");el.className="step";el.textContent=key;el.setAttribute("aria-label",`Step ${i+1}: ${key}`);$("recipe").appendChild(el)});paint(0)}catch(e){fail(e.message)}
+addEventListener("pagehide",()=>{loadController?.abort();stopSources();ctx?.close()},{once:true});
+</script>
+</body>
+</html>

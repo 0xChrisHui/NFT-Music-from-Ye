@@ -1,4 +1,4 @@
-// P14 永久音频入口；本阶段只开放本地审计，任何上传参数都会 fail closed。
+// P14 永久资源入口；G7 关闭前只开放本地审计，任何上传参数都会 fail closed。
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -8,6 +8,8 @@ const CHARSET_V1 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const ROOT = process.cwd();
 const CLIPS_DIR = join(ROOT, 'public', 'the36');
 const MANIFEST_PATH = join(ROOT, 'src', 'features', 'wallet-recipe', 'clips-v1.json');
+const DECODER_PATH = join(ROOT, 'src', 'wallet-recipe-decoder', 'index.html');
+const IMAGE_PATH = join(ROOT, 'public', 'pond-echoes', 'cover-v1.png');
 
 type Clip = {
   key: string;
@@ -26,15 +28,24 @@ function sha256(value: Buffer | string): string {
   return createHash('sha256').update(value).digest('hex');
 }
 
-function validateArgs(): { writeManifest: boolean } {
+type AuditKind = 'clips' | 'decoder' | 'image';
+
+function validateArgs(): { kind: AuditKind; writeManifest: boolean } {
   const args = process.argv.slice(2);
-  const allowed = new Set(['clips', '--audit', '--write-manifest']);
+  const allowed = new Set(['clips', 'decoder', 'image', '--audit', '--write-manifest']);
   const unknown = args.filter((arg) => !allowed.has(arg));
   if (unknown.length > 0) throw new Error(`不支持的参数：${unknown.join(', ')}`);
-  if (!args.includes('clips') || !args.includes('--audit')) {
-    throw new Error('A0 仅允许：clips --audit [--write-manifest]');
+  const kinds = args.filter((arg): arg is AuditKind => (
+    arg === 'clips' || arg === 'decoder' || arg === 'image'
+  ));
+  if (kinds.length !== 1 || !args.includes('--audit')) {
+    throw new Error('当前仅允许：<clips|decoder|image> --audit [--write-manifest]');
   }
-  return { writeManifest: args.includes('--write-manifest') };
+  const writeManifest = args.includes('--write-manifest');
+  if (writeManifest && kinds[0] !== 'clips') {
+    throw new Error('--write-manifest 只适用于 clips 审计');
+  }
+  return { kind: kinds[0], writeManifest };
 }
 
 function inspectFiles(): Clip[] {
@@ -95,8 +106,28 @@ function buildManifest(clips: Clip[]) {
   };
 }
 
+function auditStaticAsset(kind: Exclude<AuditKind, 'clips'>): void {
+  const path = kind === 'decoder' ? DECODER_PATH : IMAGE_PATH;
+  const contentType = kind === 'decoder' ? 'text/html; charset=utf-8' : 'image/png';
+  const buffer = readFileSync(path);
+  if (buffer.length === 0) throw new Error(`${kind} 是零字节文件`);
+  if (kind === 'decoder') {
+    const html = buffer.toString('utf8');
+    for (const required of ['v!=="1"', 'recipe.length!==36', 'TIMEOUT=12000', 'FADE=.06']) {
+      if (!html.includes(required)) throw new Error(`Decoder 缺少冻结合同：${required}`);
+    }
+  } else if (!buffer.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))) {
+    throw new Error('E5 封面不是合法 PNG signature');
+  }
+  console.log(JSON.stringify({ kind, path, bytes: buffer.length, contentType, sha256: sha256(buffer) }, null, 2));
+}
+
 function main(): void {
-  const { writeManifest } = validateArgs();
+  const { kind, writeManifest } = validateArgs();
+  if (kind !== 'clips') {
+    auditStaticAsset(kind);
+    return;
+  }
   const clips = inspectFiles();
   assertConsistent(clips);
   const manifest = buildManifest(clips);
