@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>P14 片段解码审计</title>
+    <style>
+      :root { color-scheme: dark; font: 14px/1.5 ui-monospace, monospace; background: #0b0d10; color: #e7edf5; }
+      body { max-width: 1120px; margin: 32px auto; padding: 0 20px; }
+      button { padding: 10px 16px; border: 1px solid #7c92aa; border-radius: 8px; background: #17202a; color: inherit; cursor: pointer; }
+      button:disabled { opacity: .5; cursor: wait; }
+      pre { overflow: auto; padding: 16px; border: 1px solid #2b3745; border-radius: 8px; background: #11161d; }
+      table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      th, td { padding: 6px 8px; border-bottom: 1px solid #293440; text-align: right; }
+      th:first-child, td:first-child { text-align: left; }
+      .ok { color: #75e69c; }
+      .bad { color: #ff8585; }
+    </style>
+  </head>
+  <body>
+    <h1>P14 本地 36 片段 Web Audio 审计</h1>
+    <p>点击后按固定字符顺序逐个解码。这里的 <code>AudioBuffer.length</code> 是浏览器播放真值。</p>
+    <button id="run" type="button">开始 36/36 解码</button>
+    <button id="listen" type="button" disabled>按 A→9 顺序试听</button>
+    <span id="status"></span>
+    <table>
+      <thead><tr><th>key</th><th>frames</th><th>Hz/ch</th><th>durationMs</th><th>RMS dB</th><th>首/尾静音 ms</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <pre id="output">等待开始</pre>
+    <script>
+      const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      const run = document.querySelector('#run');
+      const listen = document.querySelector('#listen');
+      const status = document.querySelector('#status');
+      const rows = document.querySelector('#rows');
+      const output = document.querySelector('#output');
+      let decoded = [];
+
+      function analyze(buffer) {
+        let peak = 0;
+        let squared = 0;
+        let audibleFirst = buffer.length;
+        let audibleLast = -1;
+        let clippedSamples = 0;
+        for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
+          const samples = buffer.getChannelData(channel);
+          for (let index = 0; index < samples.length; index += 1) {
+            const amplitude = Math.abs(samples[index]);
+            peak = Math.max(peak, amplitude);
+            squared += amplitude * amplitude;
+            if (amplitude >= 0.999) clippedSamples += 1;
+            if (amplitude >= 0.001) {
+              audibleFirst = Math.min(audibleFirst, index);
+              audibleLast = Math.max(audibleLast, index);
+            }
+          }
+        }
+        const total = buffer.length * buffer.numberOfChannels;
+        const silent = audibleLast < 0;
+        return {
+          peak: Number(peak.toFixed(6)),
+          rmsDb: Number((20 * Math.log10(Math.sqrt(squared / total))).toFixed(3)),
+          clippedSamples,
+          leadingSilenceMs: Number(((silent ? buffer.length : audibleFirst) / buffer.sampleRate * 1000).toFixed(3)),
+          trailingSilenceMs: Number(((silent ? buffer.length : buffer.length - 1 - audibleLast) / buffer.sampleRate * 1000).toFixed(3)),
+        };
+      }
+
+      run.addEventListener('click', async () => {
+        run.disabled = true;
+        rows.replaceChildren();
+        const context = new AudioContext();
+        const results = [];
+        decoded = [];
+        try {
+          for (const key of charset) {
+            status.textContent = ` ${results.length + 1}/36：${key}`;
+            const response = await fetch(`/the36/${key}.mp3`, { cache: 'no-store' });
+            if (!response.ok) throw new Error(`${key}: HTTP ${response.status}`);
+            const buffer = await context.decodeAudioData(await response.arrayBuffer());
+            const signal = analyze(buffer);
+            decoded.push(buffer);
+            const item = {
+              key,
+              frameCount: buffer.length,
+              sampleRate: buffer.sampleRate,
+              channels: buffer.numberOfChannels,
+              durationMs: Number((buffer.duration * 1000).toFixed(6)),
+              ...signal,
+            };
+            results.push(item);
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${key}</td><td>${item.frameCount}</td><td>${item.sampleRate}/${item.channels}</td>` +
+              `<td>${item.durationMs}</td><td>${item.rmsDb}</td>` +
+              `<td>${item.leadingSilenceMs}/${item.trailingSilenceMs}</td>`;
+            rows.append(row);
+          }
+          const formats = new Set(results.map((item) => `${item.sampleRate}/${item.channels}`));
+          const valid = results.length === 36 && formats.size === 1 && results.every((item) => item.frameCount > 0);
+          status.textContent = valid ? ' 通过：36/36' : ' 失败：格式或数量异常';
+          status.className = valid ? 'ok' : 'bad';
+          output.textContent = JSON.stringify(results, null, 2);
+          document.title = valid ? 'PASS P14 片段解码审计' : 'FAIL P14 片段解码审计';
+          listen.disabled = !valid;
+        } catch (error) {
+          status.textContent = ` 失败：${error instanceof Error ? error.message : String(error)}`;
+          status.className = 'bad';
+          document.title = 'FAIL P14 片段解码审计';
+        } finally {
+          await context.close();
+          run.disabled = false;
+        }
+      });
+
+      listen.addEventListener('click', async () => {
+        listen.disabled = true;
+        const context = new AudioContext();
+        for (let index = 0; index < decoded.length; index += 1) {
+          status.textContent = ` 顺序试听 ${index + 1}/36：${charset[index]}`;
+          const source = new AudioBufferSourceNode(context, { buffer: decoded[index] });
+          source.connect(context.destination);
+          source.start();
+          await new Promise((resolve) => { source.onended = resolve; });
+        }
+        await context.close();
+        status.textContent = ' 顺序试听播放完成；请人工记录爆音、截断、静音与响度异常';
+        listen.disabled = false;
+      });
+      if (new URLSearchParams(location.search).has('autorun')) run.click();
+    </script>
+  </body>
+</html>
