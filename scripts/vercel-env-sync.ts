@@ -12,7 +12,15 @@ const ROOT = process.cwd();
 
 // 钉进每枚 NFT 的永久 server-only 值：非 NEXT_PUBLIC_ 但三环境必须一致，
 // 否则新铸 NFT 指错解码器/音效表。C 类默认只查 NEXT_PUBLIC_*（这两个是盲区，Codex P1）→ 显式纳入白名单。
-const CRITICAL_SERVER_ONLY = new Set(['SCORE_DECODER_AR_TX_ID', 'SOUNDS_MAP_AR_TX_ID']);
+const CRITICAL_SERVER_ONLY = new Set([
+  'SCORE_DECODER_AR_TX_ID',
+  'SOUNDS_MAP_AR_TX_ID',
+  'WALLET_RECIPE_MODE',
+  'WALLET_RECIPE_EXPECTED_ACTIVATION_BLOCK',
+  'WALLET_RECIPE_CLIP_MANIFEST_V1_TX_ID',
+  'WALLET_RECIPE_DECODER_V1_TX_ID',
+  'WALLET_RECIPE_IMAGE_V1_TX_ID',
+]);
 
 function parseLocalEnv(): Map<string, string> {
   const path = join(ROOT, '.env.local');
