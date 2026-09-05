@@ -10,6 +10,7 @@ import {
 } from 'viem';
 import type { ClipManifestV1, RecipeV1 } from '@/src/types/wallet-recipe';
 import {
+  RECIPE_CROSSFADE_MS_V1,
   RECIPE_CHARSET_V1,
   RECIPE_DOMAIN_V1,
   RECIPE_LENGTH_V1,
@@ -126,8 +127,9 @@ export function calculateRecipeDurationMs(
     }
     return sum + durationMs;
   }, 0);
-  // manifest 最细到 6 位小数；统一舍入消除 IEEE-754 连加产生的尾数漂移。
-  return Math.round(total * 1_000_000) / 1_000_000;
+  const overlapMs = RECIPE_CROSSFADE_MS_V1 * (recipe.length - 1);
+  // 相邻片段真实重叠 60ms；metadata 必须记录听众实际经历的时间线。
+  return Math.round((total - overlapMs) * 1_000_000) / 1_000_000;
 }
 
 export function hashRecipeV1(recipe: string): Hex {

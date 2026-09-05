@@ -7,7 +7,14 @@ import {
   parseClipManifestV1,
   serializeClipManifestV1,
 } from '../../src/lib/wallet-recipe/clip-manifest';
-import { RECIPE_CHARSET_V1 } from '../../src/lib/wallet-recipe/constants';
+import {
+  parsePondEchoCollectionMetadataV1,
+  serializePondEchoCollectionMetadataV1,
+} from '../../src/lib/wallet-recipe/collection-metadata';
+import {
+  RECIPE_CHARSET_V1,
+  RECIPE_CROSSFADE_MS_V1,
+} from '../../src/lib/wallet-recipe/constants';
 import {
   buildWalletRecipeMetadataJsonV1,
   buildWalletRecipeMetadataV1,
@@ -42,6 +49,17 @@ function verifyFrozenVectors(): void {
   assert.ok(
     RECIPE_V1_TEST_VECTORS.some((vector) => vector.rejectedByteCount > 0),
     '固定向量必须真实命中 252–255 拒绝路径',
+  );
+  const scoreOne = RECIPE_V1_TEST_VECTORS[6];
+  const rawDuration = [...scoreOne.recipe].reduce((sum, key) => {
+    const clip = manifest.clips.find((candidate) => candidate.key === key);
+    assert.ok(clip);
+    return sum + clip.durationMs;
+  }, 0);
+  assert.equal(
+    Math.round((rawDuration - scoreOne.durationMs) * 1_000_000) / 1_000_000,
+    RECIPE_CROSSFADE_MS_V1 * (scoreOne.recipe.length - 1),
+    '总时长必须扣除 35 个真实交叉淡化重叠区间',
   );
 }
 
@@ -170,9 +188,25 @@ function verifyMetadataContract(): void {
   assert.throws(() => buildWalletRecipeMetadataV1({ ...input, sourceScoreTokenId: 0 }));
 }
 
+function verifyCollectionMetadataContract(): void {
+  const imageTxId = 'I'.repeat(43);
+  const json = serializePondEchoCollectionMetadataV1(imageTxId);
+  assert.deepEqual(parsePondEchoCollectionMetadataV1(JSON.parse(json)), {
+    name: 'Pond Echoes',
+    description: 'A permanent wallet-born score from Ripples in the Pond, composed from a deterministic 36-part recipe.',
+    image: `ar://${imageTxId}`,
+    external_link: 'https://pond-ripple.xyz',
+  });
+  assert.throws(() => parsePondEchoCollectionMetadataV1({
+    ...JSON.parse(json),
+    creator: 'unregistered-field',
+  }), /字段合同/);
+}
+
 verifyFrozenVectors();
 verifyAddressContract();
 verifyDistribution();
 verifyManifestContract();
 verifyMetadataContract();
+verifyCollectionMetadataContract();
 console.log('P14-B Recipe v1、10,000 地址统计与 metadata 合同验证通过');
