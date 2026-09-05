@@ -1,3 +1,5 @@
+import type { WalletRecipeHealth } from './wallet-recipe-health';
+
 /**
  * 共享类型定义 — Track A / Track B / Track C 都用这套契约
  * 改这个文件前所有线必须对齐
@@ -85,4 +87,6 @@ export interface HealthResponse {
   };
   /** A16: upstash = Upstash 已配置；fallback = 未配置（生产 fail-closed）*/
   lockProvider?: 'upstash' | 'fallback';
+  /** P14 D5：钱包配方空投的独立健康面，不泄露任何凭证。 */
+  walletRecipe: WalletRecipeHealth;
 }

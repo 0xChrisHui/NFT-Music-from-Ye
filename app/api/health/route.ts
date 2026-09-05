@@ -6,6 +6,9 @@ import { getLockProvider } from '@/src/lib/chain/operator-lock';
 import { formatEther } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { HealthResponse } from '@/src/types/tracks';
+import { getWalletRecipeHealth } from '@/src/lib/health/wallet-recipe-health';
+
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
 
 /**
  * GET /api/health?secret=xxx
@@ -16,6 +19,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: '无效的 secret' }, { status: 401 });
   }
 
+  let account: ReturnType<typeof privateKeyToAccount> | null = null;
+  try {
+    account = privateKeyToAccount(process.env.OPERATOR_PRIVATE_KEY as `0x${string}`);
+  } catch {
+    account = null;
+  }
+  const walletRecipe = await getWalletRecipeHealth(account?.address ?? ZERO_ADDRESS);
   const result: HealthResponse = {
     db: 'ok',
     wallet: 'ok',
@@ -26,6 +36,7 @@ export async function GET(req: NextRequest) {
     jwtBlacklistSize: 0,
     lastBalanceAlert: null,
     mintQueue: { failed: 0, stuck: 0, oldestAgeSeconds: null },
+    walletRecipe,
   };
 
   try {
@@ -37,9 +48,7 @@ export async function GET(req: NextRequest) {
     if (dbError) result.db = 'error';
 
     // 2. 运营钱包余额
-    const account = privateKeyToAccount(
-      process.env.OPERATOR_PRIVATE_KEY as `0x${string}`,
-    );
+    if (!account) throw new Error('OPERATOR_PRIVATE_KEY 未正确配置');
     const balance = await publicClient.getBalance({ address: account.address });
     const eth = parseFloat(formatEther(balance));
     result.walletBalance = eth.toFixed(6);

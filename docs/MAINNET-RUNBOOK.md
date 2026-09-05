@@ -310,3 +310,143 @@ python <脚本> "$NEXT_PUBLIC_SUPABASE_URL" "$SUPABASE_SERVICE_ROLE_KEY" "C:/Use
 - 首次全量：2026-07-27 已做（338 行 / 14 表）
 - **部署日前 24h 内必须再做一份**（D1 检查表引用）
 - **清链衍生表之前必须确认快照可恢复**（D2 步骤 0 硬前置，非可选）
+
+---
+
+## 10. P14 Pond Echoes 自动空投运维
+
+P14 与现有 Score 铸造队列完全独立。任何 P14 异常先把 `WALLET_RECIPE_MODE` 切为
+`off` 并重新部署；这只停止 P14 的发现和处理，不回滚 cursor、不删除资格，也不影响
+ScoreNFT 正常铸造。已经上传到 Arweave 或广播到链上的对象不可撤销。
+
+### 10.1 三态与启动顺序
+
+| mode | 行为 | 使用时机 |
+|---|---|---|
+| `off` | 不发现、不 claim、不上传、不广播 | 缺配置、事故止血、部署初始态 |
+| `observe` | 只消费已确认的 Score mint，冻结资格与 recipe | 主网至少 10 次 cron / 15 分钟观察 |
+| `live` | 发现后每次 cron 只推进一条任务的一个 step | health、角色、余额和永久输入全绿后 |
+
+未设置或非法 mode 一律按 `off`。activation 唯一真值是
+`p14:activation:<chainId>:<小写 ScoreNFT 地址>`；环境变量
+`WALLET_RECIPE_EXPECTED_ACTIVATION_BLOCK` 只能核对相等，不能覆盖数据库。
+
+生产调度只用 cron-job.org：每分钟 Bearer 调用一次
+`/api/cron/process-wallet-recipe`。route 在 45 秒后停止 claim、55 秒前返回；lease 固定
+5 分钟且每步落库后立即释放。safe retry 依次等待 1/2/5/15/30 分钟，五次仍失败进入
+`manual_review`。cron 调用成功时写
+`p14:last-cron-success:<chainId>:<小写 ScoreNFT 地址>`；超过 3 分钟未更新即处理告警。
+
+### 10.2 只读诊断顺序
+
+1. 先查受保护 health，不把 Bearer 值放进 URL、截图或工单：
+
+   ```bash
+   curl -H "Authorization: Bearer $CRON_SECRET" https://pond-ripple.xyz/api/health
+   ```
+
+   核对 `walletRecipe`：chainId、mode/configured、DB table/RPC、永久输入三项、合约
+   code/minter role、activation、上游/P14 cursor、安全链头、最近 cron、队列分布、最老
+   active age 与 `uploadResultUnknown`。health 只返回布尔状态和公开游标，不返回 env 值或私钥。
+
+2. DB 只读锁定单行证据；先保存输出，再决定恢复动作：
+
+   ```sql
+   select id, chain_id, source_score_contract, origin_wallet, eligibility,
+          source_score_token_id, source_score_tx_hash, source_score_block,
+          recipe, recipe_hash, status, retry_count, failure_kind, last_error,
+          metadata_upload_state, metadata_sha256, metadata_ar_tx_id,
+          token_uri, mint_attempted_at, tx_hash, token_id, alerted_at, updated_at
+   from public.wallet_recipe_queue
+   where id = '<queue uuid>';
+
+   select id, chain_id, kind, content_sha256, state, arweave_tx_id,
+          attempted_at, verified_at, last_error
+   from public.arweave_upload_ledger
+   where queue_id = '<queue uuid>';
+   ```
+
+3. 查链上 origin 映射，再查交易 receipt；不要先改 DB：
+
+   ```bash
+   cast call <P14_CONTRACT> "tokenIdByOrigin(address)(uint256)" <ORIGIN> --rpc-url $ALCHEMY_RPC_URL
+   cast call <P14_CONTRACT> "originWalletOf(uint256)(address)" <TOKEN_ID> --rpc-url $ALCHEMY_RPC_URL
+   cast call <P14_CONTRACT> "ownerOf(uint256)(address)" <TOKEN_ID> --rpc-url $ALCHEMY_RPC_URL
+   cast call <P14_CONTRACT> "tokenURI(uint256)(string)" <TOKEN_ID> --rpc-url $ALCHEMY_RPC_URL
+   cast receipt <TX_HASH> --rpc-url $ALCHEMY_RPC_URL
+   ```
+
+   只有 receipt 成功、达到 20 confirmations，且 origin/tokenURI/专用事件与 DB、永久
+   metadata 全部一致，才允许恢复成功态。当前 owner 可以与 origin 不同，这是正常转让。
+
+### 10.3 `upload_result_unknown`：绝不自动重传
+
+这是停机调查态，不是 safe retry。连续调用 cron 也不得产生第二次上传。按
+`content_sha256` 查询 Turbo/Arweave 的请求记录与交易；找到候选 txid 后，必须从两个网关
+取回 bytes 并逐字节核对 SHA-256。未找到不等于“确定没上传”，不得仅因网关 404 清状态。
+
+只有取得服务商“请求未收件”的明确证据，才可人工重新上传同一份已冻结 bytes；上传后先
+把 txid、双网关 hash 和调查证据写入事件记录，再推进账本。任何 txid/hash 不一致都保持
+`off + manual_review`，不换 recipe、不生成第二份 metadata。
+
+### 10.4 确认安全后重开单个 safe job
+
+仅适用于已经排除链上广播、永久上传未知和内容 hash 漂移的单条任务。`<恢复状态>` 必须从
+`pending / preparing_media / uploading_metadata / minting_onchain / confirming_onchain` 中按
+证据选择。先 `BEGIN` + `FOR UPDATE` 复核，再用完整条件更新；影响行数不是 1 就 `ROLLBACK`。
+
+```sql
+begin;
+select id, status, retry_count, failure_kind, metadata_upload_state,
+       metadata_sha256, metadata_ar_tx_id, tx_hash, token_id
+from public.wallet_recipe_queue
+where id = '<queue uuid>'
+for update;
+
+update public.wallet_recipe_queue
+set status = '<恢复状态>', retry_count = 0, retry_resume_status = null,
+    next_retry_at = null, failure_kind = null, last_error = null,
+    locked_by = null, lease_expires_at = null, alerted_at = null,
+    updated_at = now()
+where id = '<queue uuid>'
+  and status = 'manual_review'
+  and metadata_upload_state <> 'upload_result_unknown'
+returning id, status, recipe_hash, metadata_sha256, metadata_ar_tx_id, tx_hash;
+commit;
+```
+
+不得改 origin、source Score、recipe/hash、activation 或 cursor；不得提供或执行批量删除资格行。
+
+### 10.5 链上已成功但 DB 未完成的映射恢复
+
+先完成 §10.2 的四方对账并保存 receipt/event。确认链上 `tokenIdByOrigin`、`originWalletOf`、
+`tokenURI` 与该任务完全一致且已达 20 confirmations 后，才可在单行事务中补齐：
+
+```sql
+begin;
+select id, origin_wallet, recipe_hash, metadata_sha256, metadata_ar_tx_id,
+       token_uri, tx_hash, token_id, status
+from public.wallet_recipe_queue
+where id = '<queue uuid>'
+for update;
+
+update public.wallet_recipe_queue
+set p14_contract = lower('<P14_CONTRACT>'), tx_hash = lower('<TX_HASH>'),
+    token_id = <TOKEN_ID>,
+    mint_attempted_at = coalesce(mint_attempted_at, '<链上交易区块时间 ISO>'::timestamptz),
+    status = 'success', failure_kind = null,
+    last_error = null, locked_by = null, lease_expires_at = null,
+    updated_at = now()
+where id = '<queue uuid>'
+  and status = 'manual_review'
+  and metadata_upload_state = 'verified'
+  and token_uri = '<已核对的 ar:// URI>'
+  and lower(origin_wallet) = lower('<ORIGIN>')
+returning id, status, origin_wallet, token_id, token_uri, tx_hash;
+commit;
+```
+
+若映射存在但 URI/source 无法对账，保持 `off`，不要用第二笔 mint“试试看”。告警首次进入
+`manual_review` 时只发一次，内容应含 queue id、origin、source Score token 与已有 tx hash；
+恢复后才清 `alerted_at`。运营钱包低余额、角色缺失、active 积压、上游 safe-head 落后或永久
+输入异常，同样先 `off`、留证，再按以上顺序诊断。
