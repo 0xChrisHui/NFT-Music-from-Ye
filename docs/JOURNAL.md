@@ -1440,3 +1440,9 @@ Phase 6 kickoff 3 个产品决策冻结。后续不允许执行中自然飘移�
 - **永久性决定**：网站在线时允许使用按 Arweave txid/hash 校验的高速镜像；链上 tokenURI、Arweave metadata/音频与永久 Decoder 仍是唯一可脱离本站复现的真相。
 - **实施决定**：先做 P15-0 冷/热、桌面/移动和故障基线，再按证据优化；不把漂亮 loading、假数据或一次最快结果当作“丝滑”。
 - **架构边界**：本轮只建 playbook，不修改 `docs/ARCHITECTURE.md`；进入 CDN/全局缓存/统一资源解析器施工前另取用户授权。
+
+## 2026-09-06 — P11 通过隔离工作树发布正式站
+
+- **发布决定**：主工作区同时有未提交 P14 工作，因此从最新 `origin/main` 建立隔离 worktree，只合并已审计的 P11 功能分支；过程视觉样板继续留在本地 `references/`，不重新带回仓库。
+- **上线结果**：提交 `2e55d65` 已推送 `main`，Vercel Production 成功；正式 `/artist`、`/me` 与 `/score/1` 均命中新 P11 内容，分享入口和永久凭证可见。
+- **健康结果**：受保护 health 验证 DB/钱包正常，pending jobs、manual review、mint failed 与 stuck 均为 0；外部 Arweave 动态补证继续保持未完成的真实状态。

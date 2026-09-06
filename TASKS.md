@@ -269,6 +269,7 @@ findings 状态更新：`reviews/phase-6-findings-tracker.md`（7 项 deferred-j
 
 ## ✅ Done
 
+- **[Phase 11 正式发布]** ✅ 完成（2026-09-06）— 发布提交 `2e55d65` 已进入 `main` 并由 Vercel Production 成功部署；`/`、`/artist`、`/me`、`/score/1` 新 UI 与受保护健康检查均完成线上冒烟。外部动态补证与 Artist 正式文案保留为非阻塞开放项。
 - **[Phase 9 最终封存]** ✅ 完成（2026-09-05）— 33 键 / 33 唯一音效 / 33 生产动画已通过最终静态审计、浏览器压力 Gate、首页同步、Production 发布与线上复验；P9 遗留项为 0，后续体感反馈转独立热修或新阶段。
 
 - **[Phase 11 代码与自动 Gate]** ✅ 完成（2026-09-02）— A–E 代码、C2/C3 档案七态与局部失败、Artist 草稿页及字段级 stats 容错、ARCH 当前空投语义清理、第二 Token deferred 决策均闭合；C 的竞态/刷新/坏封面/坏缓存已修。最终 verify：production build 34/34、Forge 42/42；Artist 375/768/1024/1440 与 `/me` 未登录矩阵通过，console 0。仅外部 Arweave 恢复后的 ready Score 两项动态证据留在 Blocked。

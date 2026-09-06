@@ -32,6 +32,8 @@
 
 **P11 当前（2026-09-05）**：**代码与自动 Gate 已完成。** Track A、Track B B1–B5、Track C C0–C3、Track D D1–D3、Track E E0–E4 与 ARCHITECTURE v3/当前产品定位同步均已落地；C 的竞态、刷新反馈、坏封面与坏缓存已修，Artist stats API 已做到字段级局部容错且不再输出旧空投语义。Score 滚动热修已把生产 `/score/[id]` 的鼠标视差与滚轮景深解耦，纵向阅读页不再拦截滚轮；loading 同步补成可滚动的 Hero + 永久档案两屏结构。最终 `scripts/verify.sh` 全绿：TypeScript、ESLint、production build（34/34）与 Forge 42/42 全部通过；首页构建产物对 Score data/playback/ledger/session 的禁入模式仍为 0 命中。最终浏览器矩阵中 Artist 375/768/1024/1440 四视口与 `/me` 未登录边界通过，控制台 0 error。**未完成的只有用户本机滚动目验与外部动态证据**：Mainnet Token #1 的 ready Score cold-start reduced-motion 与日食黑盘复拍当前被 `arweave.net`、`ario.permagate.io` 两个网关同时失败阻塞；这不是代码 Gate 失败，资源恢复后必须补证，不能提前写通过。第二枚 Mainnet Token Gate 已 deferred，Sepolia #24 只作隔离 fixture。Artist 正式文案仍待用户以后替换，但不再阻塞代码完成。
 
+**P11 正式发布（2026-09-06）**：发布提交 `2e55d65` 已推送 `main`，Vercel Production 成功。正式域名 `/`、`/artist`、`/me`、`/score/1` 均 HTTP 200；Artist 草稿标识、私人音乐档案、Score 分享入口与永久凭证均命中新版 SSR 内容。受保护 `/api/health` 使用 Bearer 验证为 DB/钱包正常、两队列 0 积压/0 失败。双 Arweave 网关恢复后的 Token #1 动态补证与 Artist 正式文案仍是开放项，不阻塞发布。
+
 **P14 v2 Playbook（2026-09-05）**：核心方案与 `P14-0/A/B/C/E/D/F` 七条详细施工轨已冻结，文件位于 `playbook/phase-14/`。新 P14 = 钱包在启用后第一次成功铸造 ScoreNFT → 地址派生 36 位 `A-Z0-9` 确定性随机配方 → metadata 永久保存 recipe 与所用碎片 `ar://` 地址 → 独立 ERC-721 异步空投；每钱包终身一枚、允许转让、不补发历史钱包、只上 OP Mainnet。详细顺序因永久 metadata 依赖调整为 `P14-0 → A → B → C → E → D → F`：E0 必须先与用户共创视觉并冻结永久播放器，再允许 D 上传 metadata。**尚未开始业务代码；下一步只执行 P14-0 决策 Gate。**
 
 **P15 Playbook（2026-09-05）**：已建立 `playbook/phase-15/` 七轨详细计划，覆盖性能基线与预算、全局导航/稳定外壳、首页水塘与音乐圆圈快显、`/me` 身份及三段档案解耦、API/真实缓存、高速媒体镜像、Score/P14 永久播放和全站回归。P15 取代旧“音效系统扩展”；旧项退回未排期，不挤占 P16。**当前只完成计划，没有修改页面、API或播放器；正式施工从 P15-0 开始，且不改变当前 P14-0 的权威下一步。**
