@@ -101,7 +101,9 @@ create index if not exists wallet_recipe_queue_claim_idx
 create table if not exists public.arweave_upload_ledger (
   id uuid primary key default gen_random_uuid(),
   chain_id bigint not null check (chain_id in (10, 11155420)),
-  kind text not null check (kind in ('clip', 'clip_manifest', 'decoder', 'image', 'metadata')),
+  kind text not null check (kind in (
+    'clip', 'clip_manifest', 'decoder', 'image', 'collection_metadata', 'metadata'
+  )),
   content_sha256 text not null check (content_sha256 ~ '^[0-9a-f]{64}$'),
   queue_id uuid references public.wallet_recipe_queue(id) on delete restrict,
   state text not null check (state in ('uploading', 'uploaded', 'verified', 'upload_result_unknown')),
@@ -112,7 +114,10 @@ create table if not exists public.arweave_upload_ledger (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (chain_id, kind, content_sha256),
-  constraint arweave_ledger_queue_shape check (kind <> 'metadata' or queue_id is not null),
+  constraint arweave_ledger_queue_shape check (
+    (kind = 'metadata' and queue_id is not null)
+    or (kind <> 'metadata' and queue_id is null)
+  ),
   constraint arweave_ledger_tx_shape check (
     state not in ('uploaded', 'verified') or arweave_tx_id is not null
   ),
@@ -290,6 +295,14 @@ begin
   select l.* into v_ledger from public.arweave_upload_ledger l
     where l.chain_id = v_job.chain_id and l.kind = 'metadata'
       and l.content_sha256 = p_content_sha256 for update;
+  -- 旧 worker 可能在 Turbo 已收件但尚未回写 txid 时退出；过期后只能转人工核对，
+  -- 绝不能把没有 txid 的 uploading 当成“未上传”并再次扣费。
+  if v_inserted is null and v_ledger.state = 'uploading'
+    and v_ledger.attempted_at <= now() - interval '5 minutes' then
+    update public.arweave_upload_ledger l set state = 'upload_result_unknown',
+      last_error = 'metadata upload lease expired before txid was durably recorded',
+      updated_at = now() where l.id = v_ledger.id returning l.* into v_ledger;
+  end if;
   update public.wallet_recipe_queue q set metadata_sha256 = p_content_sha256,
     metadata_upload_state = v_ledger.state,
     metadata_ar_tx_id = coalesce(v_ledger.arweave_tx_id, q.metadata_ar_tx_id),
