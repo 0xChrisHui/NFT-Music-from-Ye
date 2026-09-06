@@ -1,8 +1,11 @@
-# P14-F0 只读发布预检
+# P14-F0 首次只读发布预检
 
 - 时间：2026-09-06T00:34:55.901Z
 - 总 Gate：**BLOCKED**
-- 外部写入：无
+- 首次预检脚本外部写入：无
+
+> 本表保留 F0 首次快照，不回填改写历史证据。
+> 后续已完成测试数据库与 cron-job.org 运维预置，见本页下方的「后续闭环」。
 
 | 检查 | 状态 | 摘要 |
 |---|---|---|
@@ -23,3 +26,10 @@
 | rights-gate | PASS | `{"expected":"reviews/evidence/p14-f0/rights-confirmation.md"}` |
 | homepage-build-isolation | PASS | `{"buildArtifacts":1021,"leaks":[]}` |
 | opensea-metadata | PASS | `{"checkedAt":"2026-09-06T00:34:55.898Z","official":["https://docs.opensea.io/docs/metadata-standards","https://docs.opensea.io/docs/metadata-storage","https://docs.opensea.io/docs/contract-level-metadata"]}` |
+
+## 后续闭环
+
+- [测试数据库](./test-database.md)：46 个 migration、RLS/RPC、回滚状态机与真并发 registration/claim 均已通过。
+- [cron-job.org](./cron-job-org.md)：job `8394060` 已创建并读回，在 F6 activation/observe Gate 前保持 disabled；进入 observe 时启用 job，F7 通过后才将应用 mode 切为 live。
+- Vercel 登录与项目链接已通过；新环境变量须等永久 txid 与合约地址生成后再配置。
+- 当前最前置的永久资源 Gate 仍为 **BLOCKED**：封面 txid `4uEbvBt9gIaVt50FZ1wfQkuz3ogXZIGGjAdoWre3-SU` 尚未被第二网关完整取回，collection metadata 因此尚未首传；在此前不进入 F1 部署，也不重传封面。F1 开始前还会按当时环境重跑角色、RPC、余额与配置预检。
