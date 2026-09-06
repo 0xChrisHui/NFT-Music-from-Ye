@@ -136,6 +136,8 @@ function verifyUploadLedgerSqlContract(): void {
   assert.match(migration, /kind <> 'metadata' and queue_id is null/);
   assert.match(migration, /v_ledger\.attempted_at <= now\(\) - interval '5 minutes'/);
   assert.match(migration, /set state = 'upload_result_unknown'/);
+  assert.match(migration, /source_score_tx_hash = lower\(p_source_score_tx_hash\)/);
+  assert.match(migration, /if found then[\s\S]*P14 replay evidence changed[\s\S]*return next v_row/);
   assert.match(
     migration,
     /status = case when v_ledger\.state = 'upload_result_unknown' then 'manual_review'/,

@@ -218,18 +218,37 @@ begin
   if v_activation_text is null or v_activation_text !~ '^[0-9]+$' then
     raise exception 'P14 activationBlock missing or invalid';
   end if;
+  v_eligibility := case when p_source_score_block <= v_activation_text::bigint
+    then 'excluded_prelaunch' else 'eligible' end;
   select k.value into v_cursor from public.system_kv k
     where k.key = 'p14:cursor:' || p_chain_id || ':' || v_contract for update;
-  if v_cursor is null or v_cursor !~ '^[0-9]+:-?[0-9]+$'
-    or v_cursor is distinct from p_expected_cursor then
+  if v_cursor is null or v_cursor !~ '^[0-9]+:-?[0-9]+$' then
+    raise exception 'P14 discovery cursor missing or invalid';
+  end if;
+  select q.* into v_row from public.wallet_recipe_queue q
+    where q.chain_id = p_chain_id and q.source_score_contract = v_contract
+      and q.source_score_tx_hash = lower(p_source_score_tx_hash)
+      and q.source_score_log_index = p_source_score_log_index;
+  if found then
+    if v_row.origin_wallet_key is distinct from v_origin_key
+      or v_row.source_score_queue_id is distinct from p_source_score_queue_id
+      or v_row.source_score_token_id is distinct from p_source_score_token_id
+      or v_row.source_score_block is distinct from p_source_score_block
+      or v_row.eligibility is distinct from v_eligibility
+      or (v_eligibility = 'eligible' and (v_row.recipe is distinct from p_recipe
+        or v_row.recipe_hash is distinct from p_recipe_hash)) then
+      raise exception 'P14 replay evidence changed';
+    end if;
+    return next v_row;
+    return;
+  end if;
+  if v_cursor is distinct from p_expected_cursor then
     raise exception 'P14 discovery cursor conflict';
   end if;
   if (p_source_score_block, p_source_score_log_index) <=
     (split_part(v_cursor, ':', 1)::bigint, split_part(v_cursor, ':', 2)::integer) then
     raise exception 'P14 source event must follow the cursor';
   end if;
-  v_eligibility := case when p_source_score_block <= v_activation_text::bigint
-    then 'excluded_prelaunch' else 'eligible' end;
   if v_eligibility = 'eligible'
     and (p_recipe !~ '^[A-Z0-9]{36}$' or p_recipe_hash !~ '^[0-9a-f]{64}$') then
     raise exception 'Invalid P14 recipe';
