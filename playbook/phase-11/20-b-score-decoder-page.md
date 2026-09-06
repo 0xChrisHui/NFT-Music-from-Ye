@@ -1,253 +1,240 @@
-# Track B — `/score/[id]` Decoder-first 唱片页
+# Track B — 原生 `/score/[id]` 作品水塘
 
-> **目标**：取消“旧详情页中再嵌一个小播放页”的双层结构，让该 NFT 元数据中永久钉住的 Score Decoder 成为页面主体，并把站内导航、身份、链上凭证和分享整合为同一张唱片页。
-> **视觉锚点**：用户提供的截图及 `src/score-decoder/index.html`。
-> **最高优先级**：历史作品必须继续使用铸造时写入元数据的原始 `animation_url`。
-
----
-
-## B0｜架构同步门（强制停点）
-
-当前 `docs/ARCHITECTURE.md` 的“公开回放页”仍规定：站内主路径使用 inline `ScorePlayer`，Decoder 只服务 OpenSea/降级。这与用户最新决定冲突。
-
-### 执行规则
-
-1. 用户说“继续，并同步架构”后，才可先更新架构对应章节。
-2. 只改公开回放职责，不借机调整钱包、数据库、队列或合约架构。
-3. 架构同步完成、验证通过并得到用户继续指令后，才进入 B1。
-
-### 新职责边界
-
-```text
-/score/[id]
-├─ 站内原生层：返回导航、作品身份、生命周期、链上凭证、分享
-└─ 永久 Decoder：作品视觉、事件重放、底曲、播放状态
-
-NFT metadata.animation_url
-└─ 指向该枚 NFT 铸造时钉住的 Decoder + events/base/sounds 参数
-```
+> **目标**：把已批准的唱片 ↔ 日食沙盒迁入生产 Score；永久 metadata 提供输入，路由级 Web Audio 与隔离的 P9 会话负责重演。
+> **前置**：Track A 目验通过，并已取得明确授权将 v3 结论同步到 `docs/ARCHITECTURE.md`。
 
 ---
 
-## B1｜建立作品真值，不重建永久 URL
+## B0｜架构同步门
 
-### 为什么先做数据
+### 为什么必须先停
 
-`process-score-queue/steps-upload.ts` 已把完整 `animation_url` 写入每枚 NFT 的永久元数据。若页面用当前环境变量重新拼 URL，旧 NFT 会被悄悄切到新版 Decoder，破坏永久性。
+当前架构仍冻结“Score 使用 React/CSS + Web Audio，不加载首页 WebGL”。v3 改为复用生产 PondGL，属于正式运行时边界变化，不得只靠 playbook 偷渡。
+
+### 完成标准
+
+- 用户明确批准修改 `docs/ARCHITECTURE.md`。
+- 架构写明：同一 PondGL 能力、Score 单节点、唱片 ↔ 日食状态、永久输入、P9 路由隔离、移动 capability 降级与无 WebGL fallback。
+- 首页仍只加载自己的 35 节点数据；Score 模块不进入首页首包。
+- 不新增依赖、Canvas 树或第二个 P9 注册表。
+
+未完成 B0 不修改生产 `app/score/[id]/`。
+
+---
+
+## B1｜数据真值与类型收束
 
 ### 📦 范围
 
 - `src/data/score-source.ts`
 - `src/data/score-fallback.ts`
-- `src/types/jam.ts`（仅已有类型确实缺字段时）
-- 可新增 `src/data/score-metadata.ts`
+- 新增 `src/data/score-metadata.ts`
+- `src/types/jam.ts`（只补共享类型）
+
+### 判别联合
+
+```ts
+type ScorePageData =
+  | ScoreReadyData
+  | ScoreProcessingData
+  | ScoreFailedData;
+
+type ScorePlaybackManifest = {
+  permanentDecoderUrl: string;
+  eventsRef: string;
+  baseAudioRef: string;
+  soundsMapRef: string;
+};
+```
+
+- `ready`：`source: 'database' | 'chain'`、作品身份、永久 manifest、公开凭证与可选创作者/持有人。
+- `processing`：queue UUID、真实 active status、标题、创建时间和已存在的链上字段。
+- `failed`：queue UUID、公开安全错误分类；不把 `last_error` 原文暴露给访客。
+- 路由不存在返回 `null`；不把数据库抖动伪装成 404。
 
 ### 数据优先级
 
-1. **数据库可用且已有 `metadata_ar_tx_id`**：读取 `ar://<metadata_ar_tx_id>` 对应 JSON，使用其中原样的 `animation_url`。
-2. **数据库不可用且 id 是 Token ID**：从 OP Mainnet 读取 `tokenURI`，再读取永久元数据，使用原样 `animation_url`。
-3. **UUID 尚未铸造或尚未上传元数据**：显示真实生命周期状态，不生成假的 Decoder URL。
+1. UUID：数据库定位 queue 与真实生命周期；未完成时不生成播放 manifest。
+2. 数字 Token + DB 正常：数据库定位创作者与凭证，从 `metadata_ar_tx_id` 读取永久 metadata。
+3. 数字 Token + DB 失败/miss：OP Mainnet `tokenURI → Arweave metadata → ownerOf`。
+4. 已完成 Token 缺 metadata 或 manifest 无法验证：保留链上身份、分享与故障出口，不用当前环境拼替代资源。
 
-### 页面数据契约
+### manifest 校验
 
-| 字段 | 准确含义 | 缺失策略 |
-|---|---|---|
-| `tokenId` | ScoreNFT token id | 未铸造时明确显示“生成中” |
-| `contractAddress` | ScoreNFT 合约地址 | 来自受信配置，不叫“合约哈希” |
-| `mintTxHash` | 铸造交易哈希 | 未确认时隐藏该行并显示阶段 |
-| `metadataArTxId` | NFT 元数据 Arweave 交易 ID | 上传前显示处理中 |
-| `animationUrl` | 元数据永久钉住的 Decoder URL | 不允许自行猜测或拼新版本 |
-| `creatorAddress` | 创作时的钱包地址 | 仅数据库有可靠关联时使用 |
-| `currentHolder` | 当前 `ownerOf` 地址 | 降级读链时可用，不冒充作者 |
-| `eventCount` | 录制事件数 | 可靠时显示，否则不填 0 |
-| `mintedAt` | 铸造完成时间 | 无可靠来源时不虚构 |
+- tx id 使用现有 43 位 Arweave 规则；两个既有网关有界重试。
+- JSON 限制 128KiB；`animation_url` 只接受允许的 Arweave URL。
+- `events/base/sounds` 三项逐一验证后才生成 manifest。
+- 保留原始永久 Decoder URL 供用户主动打开，但站内不执行其中脚本。
+- 事件数、按键、时间戳与 sounds map 都从真实永久文件读取，不写死 35 或 26。
 
-### 安全与正确性
+### 凭证字段
 
-- 仅接受 `https://arweave.net/` 或项目已允许的永久网关。
-- 继续使用现有超时、大小限制和 JSON 校验约定。
-- 元数据读取失败返回可诊断状态，不把任意远程 URL塞进 iframe。
-- 不改 NFT 合约、数据库 schema、cron 状态机或已上传元数据。
+- Score 合约、Token ID、当前持有人 `ownerOf`、创作者、mint tx、setURI tx、tokenURI。
+- metadata、events、base、sounds 与永久 Decoder 的完整引用。
+- `created_at` 只叫创建时间；缺失事件数或确认时间使用 `null`，不写假 0 或 Unix epoch。
 
 ### 验收
 
-- 数据库主路径和链上降级路径对同一 Token 得到同一个永久 URL。
-- 旧 Token 的 URL 不因当前 Decoder 配置改变。
-- `ownerOf` 结果只标为“当前持有人”。
+- DB 与链上路径对同一 Token 得到相同 manifest。
+- `ownerOf` 只进入 `currentHolder`，不进入 creator。
+- 每个账本字段都有来源、完整复制值与缺失策略。
 - `bash scripts/verify.sh` 通过。
 
 ---
 
-## B2｜永久 Decoder 成为页面主体
+## B2｜路由级 Web Audio 与 P9 会话
+
+### 📦 范围
+
+- `src/features/score-playback/types.ts`
+- `src/features/score-playback/sounds-map.ts`
+- `src/features/score-playback/engine.ts`
+- `src/features/score-playback/use-score-playback.ts`
+- `src/features/score-playback/score-p9-session.ts`
+
+目录保持最多 8 个文件；此内核不进入全局 `PlayerProvider`。
+
+### 状态合同
+
+```text
+loading → ready → playing ↔ paused → ended
+   └──────────────────────────────→ error
+```
+
+- snapshot：`state / positionMs / durationMs / activeKeys / errorMessage`。
+- API：`load / play / pause / toggle / replay / destroy`；本期无 seek、局部循环或自动播放。
+- 首次播放必须来自用户手势；不绕过浏览器 autoplay 规则。
+- 唱片/日食只消费状态，不自行监听键盘、不自行建立 AudioContext。
+
+### 播放与 P9 语义
+
+1. 从 manifest 读取 events、底曲与 sounds map，并兼容永久 Decoder 已接受的旧/v1/v2 格式。
+2. Web Audio 时钟同时驱动底曲、事件音效、进度、activeKeys 与 P9 事件调度。
+3. P9 使用现有注册表与共享行为家族，不复制 33 套效果定义。
+4. Score session 拥有自己的事件游标、活跃 voice、临时调制、pointer 与水面输入；挂载时初始化，销毁时全部复位。
+5. 连击只累积、延长、混合或让位，不从零反复重启全局闪光。
+6. pause 保留音频位置与可读进度，但画面回到唱片；resume 再切日食并续播。
+7. ended 等待最长余韵完成后复位唱片；replay 从零建立干净会话。
+
+### 与全局播放器互斥
+
+- Score 客户端边界挂载时调用现有 `PlayerProvider.stop()` 一次。
+- `BottomPlayer` 在 `/score/` 不渲染。
+- 离开页面不恢复旧曲；Score engine 与 P9 session 都销毁后保持静音。
+
+### G6 / G7
+
+- 先用 Token #1 的 `V×6` 完成单次、8次/秒压力、暂停/恢复、路由往返与最长余韵恢复。
+- 确认无容量拒绝造成的不可解释缺拍、无持续内存增长、无 context loss。
+- 用户明确批准代表家族后，才把其余永久 Events 按既有注册表接入同一调度器。
+- “接入全部 Events”不等于制造新动画；未注册或不兼容输入必须有明确降级策略。
+
+### 验收
+
+- 任意时刻只有一个音频源和一个 Score P9 会话。
+- pause/resume/ended/replay 的声音、进度、唱片/日食与 P9 一致。
+- 快速路由往返后无幽灵声音、未决 timer、残留 pointer、重复 AudioContext 或全局能量。
+- `bash scripts/verify.sh` 通过。
+
+---
+
+## B3｜生产作品水塘
 
 ### 📦 范围
 
 - `app/score/[id]/page.tsx`
-- `app/score/[id]/components/ScoreDecoderFrame.tsx`（新建）
-- `app/score/[id]/score-page.css`（新建）
-- `src/components/player/PlayerProvider.tsx`（仅补安全的页面互斥能力）
-- `src/components/player/BottomPlayer.tsx`（仅补 `/score/[id]` 隐藏规则）
-
-### 布局
-
-```text
-顶部原生身份条：返回池塘 / Ripples #002 / 链状态
-┌──────────────────────────────────────────┐
-│ 永久 Score Decoder：占据首屏和主要视觉   │
-│ 作品标题、编排视觉、播放与重放均在其中    │
-└──────────────────────────────────────────┘
-下方原生账本：作者/持有人、合约、铸造交易、永久资源
-末尾原生操作：复制链接、分享、下载海报
-```
-
-### iframe 契约
-
-- `src` 必须是 B1 获得的原始 `animationUrl`。
-- 延续已验证安全属性：`sandbox="allow-scripts"` 和 `allow="autoplay"`；若现状另有必要权限，逐项说明。
-- 使用有意义的 `title`，加载前有纸面占位，失败后可重试或打开永久页。
-- 桌面首屏高度不低于 720 px；移动端按 Decoder 内容高度给足空间，目标是页面滚动而不是“小窗内再滚动”。
-- 不强行 `scrolling="no"` 隐藏不可达内容；先验证所有历史 Decoder 版本在 375 px 可完整操作。
-- 不裁掉 Decoder 标题、播放按钮或底部状态。
-
-### postMessage
-
-沿用 P10 已冻结的 v1 协议：`ready/state/ended/error`，命令仅 `play/pause/toggle`。
-
-- 父页接收事件前必须校验 `event.source === iframe.contentWindow`。
-- 不根据任意第三方 `postMessage` 修改站内播放器或 UI。
-- 进入 Decoder 页面时暂停现有全局底曲；页面内只允许 Decoder 出声。
-- 离开页面不自动恢复旧声音，避免用户未授权播放。
-
-### 删除双层感
-
-- 删除外层重复的大标题、事件数和地址堆叠。
-- 不再使用 360 px 高的内嵌卡片和卡片内滚动条。
-- `ScorePlayer` 不再是站内回放主路径。
-- 不先删除事件 API；等 B5 引用审计确认无消费者。
-
-### 验收
-
-- 首眼看到的是 Decoder 唱片，不是外层信息壳。
-- 页面只有一个音源、一个播放状态，不出现全局播放器叠在底部。
-- 375、768、1440 px 均能触达 Decoder 全部内容。
-- 键盘进入 iframe、播放、退出的顺序可理解。
-- `bash scripts/verify.sh` 通过。
-
----
-
-## B3｜身份条与链上凭证账本
-
-### 📦 范围
-
-- `app/score/[id]/components/ScoreIdentityRail.tsx`（新建）
-- `app/score/[id]/components/ScoreProvenance.tsx`（新建）
-- `app/score/[id]/ShareBar.tsx` → `app/score/[id]/components/ShareBar.tsx`
+- `app/score/[id]/components/ScorePondScene.tsx`
+- `app/score/[id]/components/ScoreRecordAnchor.tsx`
+- `app/score/[id]/components/ScoreHeroOverlay.tsx`
+- `app/score/[id]/components/ScoreLifecycle.tsx`
+- `app/score/[id]/components/ShareActions.tsx`
 - `app/score/[id]/score-page.css`
 
-> 组件进入 `components/` 子目录，避免 `app/score/[id]/` 根目录超过 8 个条目；移动 `ShareBar` 时先更新全部引用，不复制两份实现。
+若目录将超过 8 个文件，先提出子目录规划，不挤进同层。
 
-### 信息层级
+### ready 页面顺序
 
-1. **作品身份**：`Ripples #002`、完成/处理中/降级状态。
-2. **创作身份**：创作者地址；只有读链降级时则显示“当前持有人”。
-3. **链上凭证**：OP Mainnet、合约地址、Token ID、铸造交易哈希。
-4. **永久资源**：tokenURI / 元数据 Arweave、Decoder 永久页。
-5. **作品数据**：录制事件数、铸造时间；仅在有真值时出现。
+1. Hero 常驻层：返回池塘、作品标题、网络/Token/finalized 摘要与首屏分享。
+2. 中央作品锚点：idle/loading/paused/ended 唱片；playing 日食。
+3. 播放状态与进度：不与全局 BottomPlayer 重叠。
+4. 作品注脚：底曲、真实事件数和永久重演说明。
+5. `ProvenanceLedger`：创作者/当前持有人、合约、两笔交易、tokenURI、metadata、events/base/sounds、永久 Decoder。
+6. 分享补充动作：系统/复制、X、微博、海报；首屏动作不因这里存在而隐藏。
 
-### 交互
+### capability 合同
 
-- 地址/哈希默认短显，点击复制完整值；复制后有可读状态反馈。
-- 合约与交易链接到项目既有 OP Mainnet 浏览器来源。
-- Decoder 链接标注“打开永久播放器”，在新标签页打开。
-- 分享条只有：复制链接、分享至 X、分享至微博、下载海报。
-- 分享文案使用产品名 `Ripples in the Pond`，不暴露数据库 UUID。
+- 默认按 375px 单列构建：无球体、无 hover、无指针视差、无触摸拖水面；单指滚动归页面。
+- `min-width` 只扩展网格和留白；`(hover: hover) and (pointer: fine)` 才开启桌面水面跟随、悬停和鼠标扰动。
+- 移动端仍播放同一永久声音与 P9 动画，只去掉鼠标式输入和非必要额外粒子。
+- reduced-motion 再独立降低空间运动、花瓣密度与水面精度，保留状态和短淡入。
 
-### 禁止
+### 分享与账本
 
-- 不把合约地址写成交易哈希。
-- 不把元数据 tx id 写成 mint tx hash。
-- 不在读链降级时把当前持有人写成创作者。
-- 不用大面积 Web3 渐变、币价式数据卡或虚假“100% on-chain”文案。
+- 分享入口在 WebGL 前的 DOM 层，WebGL 失败也可用。
+- 完整哈希不塞进 Hero，但同页账本不得遗漏；短显示必须能复制完整值。
+- 账本表面高不透明、对比清楚；进入阅读区时水塘降低活动，不以滚动控制播放。
+- 手机账本逐行排列，不使用横向表格。
 
-### 验收
+### 可访问性
 
-- 不懂链上术语的人也能区分“作品是谁”和“凭证在哪里”。
-- 每个外链、复制和分享操作都有可访问名称与反馈。
-- 手机端完整值不撑破页面。
-- `bash scripts/verify.sh` 通过。
+- 页面只有一个 `h1`；唱片按钮有状态化 accessible name。
+- 当前事件不逐个进入 live region；只播报播放/暂停/结束/错误。
+- 播放、分享、复制、外链均可键盘完成，触控目标 ≥44px。
+- Canvas 为装饰/演出层；核心身份、控制与凭证均有 DOM 等价物。
+
+### Stop B3
+
+先完成 `/score/1` 与第二枚真实历史 Token，在 375/390/768/1024/1440 目验；未通过不进入旧路径清理或 `/me`。
 
 ---
 
-## B4｜生命周期与故障模式
+## B4｜生命周期、故障与 WebGL fallback
 
-### 状态矩阵
-
-| 场景 | 页面主体 | 用户可做什么 |
+| Queue 状态 | 用户文案 | 页面能力 |
 |---|---|---|
-| 已铸造 + 元数据可读 | Decoder + 完整凭证 | 播放、分享、复制、下载海报 |
-| DB 不可用 + 链上可读 | Decoder + “链上直读”提示 | 正常播放和访问永久资源 |
-| UUID 处理中 | 原生压片进度页 | 查看真实阶段、稍后刷新、返回池塘 |
-| Token 不存在 | 作品不存在页 | 返回池塘 |
-| 元数据暂不可读 | 凭证与故障说明 | 重试、打开 tokenURI（若安全可用） |
-| Decoder 加载失败 | 仍保留身份与凭证 | 重试、打开永久播放器 |
+| `pending` | 已进入作品制作队列 | 查看身份与创建时间 |
+| `uploading_events` | 正在保存演奏动作 | 等待、刷新、返回池塘 |
+| `minting_onchain` | 正在写入 OP Mainnet | 若已有 mint tx 则展示 |
+| `uploading_metadata` | 正在装配永久作品 | 展示 Token（若已有） |
+| `setting_uri` | 正在绑定永久播放器 | 展示 Token 与 metadata |
+| `success` | 永久作品已完成 | 完整播放、演出、分享与凭证 |
+| `failed` | 作品制作没有完成 | 安全说明与既有恢复入口 |
+
+- processing 不展示伪百分比，不擅自增加轮询。
+- DB 降级但链上成功仍可播放，使用 `EditionStamp(degraded)` 说明来源。
+- 音频错误保留唱片、身份、分享与凭证，并提供重试和永久播放器。
+- WebGL 不可用/context lost 时切静态唱片背景；不白屏、不阻断音频与阅读。
+- 低性能门降低 DPR/FBO/花瓣与 pointer work，不修改永久时间线。
 
 ### 📦 范围
 
 - `app/score/[id]/FallbackShell.tsx`
 - `app/score/[id]/loading.tsx`
-- 可新增 `app/score/[id]/components/ScoreLifecycleStage.tsx`
-- `app/score/[id]/score-page.css`
-
-### 文案规则
-
-- “链上直读”是韧性说明，不是红色错误。
-- “作品仍在压片”必须来自真实队列阶段，不展示伪进度百分比。
-- 错误说明给出下一步，不显示堆栈、内部表名或密钥。
-- 不用 mock 数据填满骨架。
+- `app/score/[id]/components/ScoreLifecycle.tsx`
+- Score scene 的既有自动降级接线
 
 ### 验收
 
-- 六种状态均可通过真实夹具或受控测试路径验证。
-- JavaScript 关闭时仍能看到作品身份和错误出口。
-- 加载态与最终布局高度接近，避免首屏大跳动。
+- 七个 queue 状态、not-found、metadata 错误、单/双网关故障、无 WebGL 与 context lost 均有证据。
+- loading 与最终 Hero 尺寸接近，不显著跳动。
+- 所有降级路径仍可分享与打开永久 Decoder。
 - `bash scripts/verify.sh` 通过。
 
 ---
 
-## B5｜退役旧播放路径与统一分享视觉
+## B5｜旧路径清理与站外视觉
 
-### 📦 范围
-
-- `app/score/[id]/ScorePlayer.tsx`（确认无引用后删除）
-- `src/data/score-events-source.ts`（只在确认无其他消费者后处理）
-- `app/api/scores/[id]/events/route.ts`（只在确认无其他消费者后处理）
-- `app/score/[id]/opengraph-image.tsx`
-- `app/score/[id]/poster/route.tsx`
-- 相关测试与文档
-
-### 执行顺序
-
-1. 用 `rg` 列出 `ScorePlayer`、事件端点和事件源全部引用。
-2. 先移除页面消费者并验证，再判断代码是否真正死亡。
-3. 事件端点若仍服务外部客户端或其他步骤，保留并记录原因；不为“干净”盲删。
-4. OG 图与海报改用 P11 唱片语言，并显示 Token 与简短链上身份。
-5. 分享链接继续落到 `/score/<tokenId>`，不直发临时数据库地址。
-
-### Track B 浏览器验收
-
-- `/score/1`：数据库主路径。
-- `/score/2`：另一枚历史作品，验证版本兼容。
-- 断开数据库后的有效 Token：链上 + Arweave 降级。
-- 有效未完成 UUID：真实生命周期页。
-- 不存在 Token、元数据故障、Decoder 故障。
-- 375、390、768、1024、1440 px。
-- 鼠标、触屏、键盘、reduced-motion。
-- 播放中来回 `/` 与 `/score`：无双重声音、无幽灵恢复。
+1. 用 `rg` 审计旧 `ScorePlayer`、事件 API、数据源和 Decoder iframe 的全部消费者。
+2. 新页面通过后才删除无消费者的旧文件；事件 API 是否删除以真实引用决定。
+3. 永久 Decoder 与 P10 postMessage 规范继续服务站外消费者。
+4. OG/海报采用“静态唱片浮于夜塘”的单帧表达，不尝试渲染 WebGL 或伪造播放状态。
+5. canonical 已铸链接只用 `/score/<tokenId>`；processing UUID 不宣传为永久链接。
 
 ### Track B 完成条件
 
-- Decoder 是 `/score/[id]` 唯一主播放器。
-- 历史 NFT 的原始 `animation_url` 未被替换或重建。
-- 身份、合约地址、铸造交易哈希和永久资源准确区分。
-- 所有状态完成验收，完整验证通过。
-- 更新 `STATUS.md` 后停下，等待用户目验再进入 Track C。
+- 页面无 iframe、无双播放器、无第二棵 PondGL。
+- 桌面可探索；手机无鼠标式动画但可完整播放和观看 P9。
+- Token #1/第二枚历史 Token、DB 降级、七个 queue 状态与 WebGL fallback 通过。
+- 站内请求与 metadata 的 events/base/sounds 逐字一致。
+- 完整凭证同页可复制，永久 Decoder 可独立播放。
+- 完整验证通过；更新状态后停在 P11-C。
