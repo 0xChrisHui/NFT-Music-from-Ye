@@ -14,17 +14,20 @@ export type GatewayEvidence = {
   error: string | null;
 };
 
-function sha256(buffer: Buffer): string {
-  return createHash('sha256').update(buffer).digest('hex');
-}
-
-export async function verifyAssetOnGateways(input: {
+type VerifyInput = {
   txId: string;
   expectedBytes: number;
   expectedSha256: string;
   expectedContentType: string;
-}): Promise<GatewayEvidence[]> {
-  return Promise.all(ARWEAVE_GATEWAYS.map(async (gateway): Promise<GatewayEvidence> => {
+};
+
+function sha256(buffer: Buffer): string {
+  return createHash('sha256').update(buffer).digest('hex');
+}
+
+async function verifyOne(gateway: string, input: VerifyInput): Promise<GatewayEvidence> {
+  let lastError = 'unknown';
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
     try {
       const response = await fetch(`${gateway}/${input.txId}`, {
         headers: { Origin: REQUEST_ORIGIN },
@@ -52,10 +55,16 @@ export async function verifyAssetOnGateways(input: {
         error: null,
       };
     } catch (error) {
-      return {
-        gateway, status: null, bytes: null, sha256: null, contentType: null,
-        cors: null, ok: false, error: error instanceof Error ? error.message : 'unknown',
-      };
+      lastError = error instanceof Error ? error.message : 'unknown';
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500));
     }
-  }));
+  }
+  return {
+    gateway, status: null, bytes: null, sha256: null, contentType: null,
+    cors: null, ok: false, error: lastError,
+  };
+}
+
+export async function verifyAssetOnGateways(input: VerifyInput): Promise<GatewayEvidence[]> {
+  return Promise.all(ARWEAVE_GATEWAYS.map((gateway) => verifyOne(gateway, input)));
 }
