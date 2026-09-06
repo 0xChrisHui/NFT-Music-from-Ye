@@ -87,7 +87,7 @@
 ## G8｜技术默认值
 
 - 生产由 cron-job.org 每分钟调用一个 P14 route，Bearer 使用现有 `CRON_SECRET`。
-- route 45 秒停止 claim，55 秒前返回；lease 5 分钟并在每一步结束立即释放。
+- route 20 秒停止 claim，25 秒前返回；给 cron-job.org 普通任务的 30 秒硬超时留 5 秒网络余量。lease 5 分钟并在每一步结束立即释放。
 - safe retry 最多 5 次，按 1/2/5/15/30 分钟退避。
 - 广播前 attempted 且无 tx hash：25 分钟只观察，之后 `manual_review`。
 - OP Sepolia/Mainnet 都等待 20 confirmations；广播 30 分钟仍未定案进入 `manual_review`。

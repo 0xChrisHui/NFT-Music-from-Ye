@@ -148,6 +148,6 @@ verifyUploadAndMintRecovery();
 verifyStableMetadata();
 verifyUploadLedgerSqlContract();
 assert.deepEqual([0, 1, 2, 3, 4, 5].map(retryDelayMinutes), [1, 2, 5, 15, 30, null]);
-assert.equal(WALLET_RECIPE_CLAIM_DEADLINE_MS, 45_000);
-assert.equal(WALLET_RECIPE_RESPONSE_DEADLINE_MS, 55_000);
+assert.equal(WALLET_RECIPE_CLAIM_DEADLINE_MS, 20_000);
+assert.equal(WALLET_RECIPE_RESPONSE_DEADLINE_MS, 25_000);
 console.log('P14-D pipeline：mode/discovery/upload/mint/retry/metadata 全部通过');
