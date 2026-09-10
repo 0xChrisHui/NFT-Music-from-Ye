@@ -1,4 +1,4 @@
-// P14 永久资源入口：严格区分本地审计、付费上传与双网关验证。
+// P14 永久资源入口：严格区分本地审计、付费上传与多网关 quorum 验证。
 import '../../_env';
 import { readFileSync, renameSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -14,6 +14,7 @@ import {
   withP14UploadLock,
 } from './upload-state';
 import { verifyAssetOnGateways } from './upload-verification';
+import { hasWalletRecipeGatewayQuorum } from '../../../src/lib/wallet-recipe/gateways';
 
 const ROOT = process.cwd();
 type Mode = 'audit' | 'upload' | 'verify';
@@ -58,7 +59,7 @@ function resolveAssets(
   const image = staticAsset('image');
   const imageEntry = readEntry(loadP14Ledger(), 'image', image.sha256);
   if (imageEntry?.state !== 'verified' || !imageEntry.arweaveTxId) {
-    throw new Error('collection metadata 必须等待 image 双网关 verified');
+    throw new Error('collection metadata 必须等待 image 多网关 quorum verified');
   }
   return [collectionAsset(imageEntry.arweaveTxId)];
 }
@@ -133,10 +134,10 @@ async function verifyAssets(assets: P14Asset[]): Promise<boolean> {
     const evidence = await verifyAssetOnGateways({ txId: entry.arweaveTxId,
       expectedBytes: asset.buffer.length, expectedSha256: asset.sha256,
       expectedContentType: asset.contentType });
-    const ok = evidence.every((item) => item.ok);
+    const ok = hasWalletRecipeGatewayQuorum(evidence);
     updateEntry(ledger, entry, { state: ok ? 'verified' : 'uploaded', gatewayEvidence: evidence,
       verifiedAt: ok ? new Date().toISOString() : null,
-      lastError: ok ? null : '双网关尚未完成字节、类型与 CORS 一致验证' });
+      lastError: ok ? null : '独立网关 quorum 尚未完成字节、类型与 CORS 一致验证' });
     allVerified &&= ok;
     console.log(`${ok ? 'verified' : 'waiting'} ${asset.kind}/${asset.key}`);
   }
@@ -181,7 +182,7 @@ async function main(): Promise<void> {
       return;
     }
     const complete = await verifyAssets(assets);
-    if (!complete) throw new Error('传播尚未双网关通过；按 15s/30s/60s/2m/5m/15m 有界重跑，不得重传');
+    if (!complete) throw new Error('传播尚未达到 2 个独立网关 quorum；按 15s/30s/60s/2m/5m/15m 有界重跑，不得重传');
     if (args.kind === 'clips' && !assets.some((asset) => asset.kind === 'clip_manifest')) {
       freezeClipTxIds(manifest, clips);
       console.log('36/36 已冻结 txid；再次运行 clips --upload 上传 manifest');

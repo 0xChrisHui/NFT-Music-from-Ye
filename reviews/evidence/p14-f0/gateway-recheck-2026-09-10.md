@@ -15,3 +15,10 @@
 - ledger 继续保持 image=`uploaded`、`verifiedAt=null`、`upload_result_unknown=0`。
 - 本轮没有上传、没有产生新 txid，也没有执行 collection metadata 或链上部署。
 - P14 仍停在永久封面 Gate；恢复点不变：只验证现有 txid，双网关通过后首次上传 collection metadata。
+
+## 无限等待收口
+
+- 用户于 2026-09-10 批准将“指定两个域名全通过”改为“3 个候选中至少 2 个独立网关完整字节/hash 一致”。
+- 候选为 `ardrive.net`、`arweave.tokyo`、`arweave.net`；重复域名不得凑 quorum。
+- `ardrive.net` 已对当时 ledger 的 39 个已上传对象全量取回，39/39 字节数、SHA-256 与 CORS 通过；`arweave.tokyo` 与另一注册 AR.IO 网关也已对封面完整 hash 通过。
+- 新 quorum 验证已对封面、36 clips 与 manifest 通过；全程没有重传这些对象。

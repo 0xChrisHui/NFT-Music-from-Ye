@@ -4,6 +4,7 @@ import {
 } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { GatewayEvidence } from './upload-verification';
+import { hasWalletRecipeGatewayQuorum } from '../../../src/lib/wallet-recipe/gateways';
 
 export type P14AssetKind =
   | 'clip' | 'clip_manifest' | 'decoder' | 'image' | 'collection_metadata';
@@ -73,8 +74,7 @@ export function loadP14Ledger(): P14UploadLedger {
       throw new Error(`P14 上传账本 ${id} 缺少 txid`);
     }
     if (entry.state === 'verified'
-      && (!entry.verifiedAt || entry.gatewayEvidence.length !== 2
-        || entry.gatewayEvidence.some((item) => !item.ok))) {
+      && (!entry.verifiedAt || !hasWalletRecipeGatewayQuorum(entry.gatewayEvidence))) {
       throw new Error(`P14 上传账本 ${id} 的 verified 证据不完整`);
     }
   }

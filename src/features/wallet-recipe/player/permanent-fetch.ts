@@ -1,8 +1,8 @@
 import type { PlayerError, WalletRecipePlayerErrorKind } from './types';
+import { WALLET_RECIPE_GATEWAYS } from '@/src/lib/wallet-recipe/gateways';
 
 const TX_ID_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
-const GATEWAYS = ['https://arweave.net', 'https://ario.permagate.io'] as const;
 const TIMEOUT_MS = 12_000;
 
 function playerError(kind: WalletRecipePlayerErrorKind, message: string): PlayerError {
@@ -47,7 +47,7 @@ export async function fetchPermanentAudio(
   }
   const errors: string[] = [];
   let integrityFailed = false;
-  for (const gateway of GATEWAYS) {
+  for (const gateway of WALLET_RECIPE_GATEWAYS) {
     try {
       const bytes = await fetchAttempt(`${gateway}/${txId}`, fetcher, signal);
       const digest = await crypto.subtle.digest('SHA-256', bytes);
@@ -65,7 +65,7 @@ export async function fetchPermanentAudio(
     }
   }
   if (integrityFailed) {
-    throw playerError('integrity', '两个永久网关返回的音频均未通过 SHA-256 校验');
+    throw playerError('integrity', '未找到通过 SHA-256 校验的永久网关');
   }
-  throw playerError('network', `两个永久网关均不可用（${errors.join('；')}）`);
+  throw playerError('network', `所有永久网关均不可用（${errors.join('；')}）`);
 }

@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
-import { ARWEAVE_GATEWAYS } from '../../../src/lib/arweave/core';
+import {
+  hasWalletRecipeGatewayQuorum,
+  WALLET_RECIPE_GATEWAYS,
+} from '../../../src/lib/wallet-recipe/gateways';
 
 const REQUEST_ORIGIN = 'https://pond-ripple.xyz';
 const RANGE_CHUNK_BYTES = 32 * 1024;
@@ -145,5 +148,10 @@ async function verifyOne(gateway: string, input: VerifyInput): Promise<GatewayEv
 }
 
 export async function verifyAssetOnGateways(input: VerifyInput): Promise<GatewayEvidence[]> {
-  return Promise.all(ARWEAVE_GATEWAYS.map((gateway) => verifyOne(gateway, input)));
+  const results: GatewayEvidence[] = [];
+  for (const gateway of WALLET_RECIPE_GATEWAYS) {
+    results.push(await verifyOne(gateway, input));
+    if (hasWalletRecipeGatewayQuorum(results)) break;
+  }
+  return results;
 }
