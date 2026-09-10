@@ -6,7 +6,7 @@
 
 ## 当前阶段
 
-**Phase**: **Phase 14 详细 Playbook 已完成，停在 P14-0 产品/合约决策 Gate**；Phase 11 代码与自动 Gate 已完成，外部动态补证与正式 Artist 文案继续保留；P8/P9/P12 已正式完结，P12 已迁移 OP Mainnet。
+**Phase**: **Phase 14 已完成 F1–F6 并在 OP Mainnet 进入 observe；F7 等待 cutoff 后首位真实 Score 首铸用户**。合约、生产数据库、永久资源、cron 与前端均已上线，但 `WALLET_RECIPE_MODE=observe`，不会上传 metadata 或铸造 Pond Echoes；P8/P9/P11/P12 已正式完结。
 **Phase 拆分（2026-06-04 新定）**：
   - **Phase 7**（已完结 ✅）= 修严重 BUG + Semi + 提速
   - **Phase 8**（已完结 ✅）= 水塘视觉重设计（首页星空 → 水塘）
@@ -34,7 +34,7 @@
 
 **P11 正式发布（2026-09-06）**：发布提交 `2e55d65` 已推送 `main`，Vercel Production 成功。正式域名 `/`、`/artist`、`/me`、`/score/1` 均 HTTP 200；Artist 草稿标识、私人音乐档案、Score 分享入口与永久凭证均命中新版 SSR 内容。受保护 `/api/health` 使用 Bearer 验证为 DB/钱包正常、两队列 0 积压/0 失败。双 Arweave 网关恢复后的 Token #1 动态补证与 Artist 正式文案仍是开放项，不阻塞发布。
 
-**P14 v2 Playbook（2026-09-05）**：核心方案与 `P14-0/A/B/C/E/D/F` 七条详细施工轨已冻结，文件位于 `playbook/phase-14/`。新 P14 = 钱包在启用后第一次成功铸造 ScoreNFT → 地址派生 36 位 `A-Z0-9` 确定性随机配方 → metadata 永久保存 recipe 与所用碎片 `ar://` 地址 → 独立 ERC-721 异步空投；每钱包终身一枚、允许转让、不补发历史钱包、只上 OP Mainnet。详细顺序因永久 metadata 依赖调整为 `P14-0 → A → B → C → E → D → F`：E0 必须先与用户共创视觉并冻结永久播放器，再允许 D 上传 metadata。**尚未开始业务代码；下一步只执行 P14-0 决策 Gate。**
+**P14 主网 observe（2026-09-11）**：P14-0/A/B/C/E/D、OP Sepolia E2E 与 F1–F6 均已完成。36 段、manifest、Decoder、image 与 collection metadata 已永久冻结；三枚测试作品各自完整播放 36/36。OP Mainnet `Pond Echoes / ECHO` 合约为 `0xd2E884FA06C9a9BDef2350956cc4216d3E2B476c`，部署 tx `0xebb5ade46ec1ad3578b7344e20c8c136ffe12233b0438ea97666057e9bf379ba`，源码已验证，admin/minter 正确且一次性 deployer 无角色。production migration 049、cutoff `156738598`、两枚历史 Score 的 `excluded_prelaunch` 已三方对账；observe 连续 954 秒共 15 次 cron 全为 HTTP 200，队列保持 2 excluded / 0 eligible / 0 failed / 0 mint。**当前只等待 cutoff 后真实用户第一次铸造 Score；发现后保持 pending，再经用户 live Gate 处理首枚真实空投，禁止伪造用户或补发历史钱包。**
 
 **P15 Playbook（2026-09-05）**：已建立 `playbook/phase-15/` 七轨详细计划，覆盖性能基线与预算、全局导航/稳定外壳、首页水塘与音乐圆圈快显、`/me` 身份及三段档案解耦、API/真实缓存、高速媒体镜像、Score/P14 永久播放和全站回归。P15 取代旧“音效系统扩展”；旧项退回未排期，不挤占 P16。**当前只完成计划，没有修改页面、API或播放器；正式施工从 P15-0 开始，且不改变当前 P14-0 的权威下一步。**
 
@@ -89,7 +89,7 @@
 7. **deployer 收口 ✅**：剩余 `0.000098861219548476 ETH` 已转回 operator（tx `0x1b7b...ef00`），只留约 `0.000000999038 ETH` 尘埃；13 项角色/冻结状态复核全绿；一次性 `deployer-wallet.json` 已销毁，admin 备份仍在。
 8. **D4 软启动观察 ✅ 完成（2026-09-01）**：观察窗超过 7 天且无 P0；终检 health、双队列、公开页与合约字节码通过。E 性能继续作为日常优化项，不阻塞阶段关闭。
 
-**当前权威下一步**：执行 P14-0，一次性拍板产品名、合约参数、资格启用边界、媒体数据形态、声音衔接与分级外部写入权限；未完成前不写 P14 业务代码、不上传 P14 永久资源。P14-E0 仍保留独立视觉共创 Gate，不能由默认建议替代。P11 本机滚动目验、Arweave 恢复后的 Token #1 动态补证和 Artist 正式文案继续作为开放项保留，但不阻塞 P14-0。
+**当前权威下一步**：保持 P14 `observe` 与两项每分钟 cron；等待 cutoff `156738598` 后首位真实用户第一次成功铸造 Score。系统发现 `eligible/pending` 后执行 F7 live Gate 与首枚真实 Pond Echo 空投；没有真实资格前不得切 live、伪造用户或补发历史钱包。
 
 ---
 

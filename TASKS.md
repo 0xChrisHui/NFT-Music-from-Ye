@@ -214,20 +214,21 @@ findings 状态更新：`reviews/phase-6-findings-tracker.md`（7 项 deferred-j
 - **Phase 16** — 原生钱包 + 多链 / ETH Mainnet（往后排）
 - **未排期** — 音效系统扩展（原 P15：26→50 与输入键/音效 id 解耦；待以后重新编号）
 
-### Phase 14 当前看板（2026-09-05）
+### Phase 14 当前看板（2026-09-11）
 
 - [x] v2 核心规则：首次 Score mint、终身一枚、可转让、不补历史、36 位 recipe、独立 ERC-721。
 - [x] 详细 playbook：`P14-0 → A → B → C → E → D → F` 七轨、异常矩阵、测试网/主网双 Gate。
 - [x] 本地素材预盘点：`public/the36` 实为 36 个不同 MP3（A–Z + 0–9），不是 35 个。
-- [ ] **当前唯一 Next：P14-0 产品/合约/权限决策表。**
-- [ ] P14-A 36 段时长/hash/Arweave 永久冻结。
-- [ ] P14-B recipe v1 与 metadata/data schema。
-- [ ] P14-C 新合约与 durable queue 地基。
-- [ ] P14-E0 与用户共同拍板视觉；之后才做播放器、封面与永久 Decoder。
-- [ ] P14-D 独立发现器与自动空投；不得修改 Score 成功路径。
-- [ ] P14-F OP Sepolia E2E、主网部署、observe、live 与首枚真实空投。
+- [x] P14-0 产品/合约/权限决策表。
+- [x] P14-A 36 段时长/hash/Arweave 永久冻结。
+- [x] P14-B recipe v1 与 metadata/data schema。
+- [x] P14-C 新合约与 durable queue 地基。
+- [x] P14-E 视觉、播放器、封面与永久 Decoder。
+- [x] P14-D 独立发现器与自动空投；Score 成功路径保持独立。
+- [ ] P14-F：OP Sepolia E2E、主网部署与 observe 已完成；F7 live/首枚真实空投等待 cutoff 后真实 `eligible`。
+- [ ] **当前唯一 Next：保持 observe；真实用户首铸 Score 被发现为 pending 后，执行 F7 live Gate。**
 
-> 连续执行目标：所有产品/视觉/外部写入判断集中在命名 Gate；每个已授权闭环尽量一次跑完并留证据。仍遵守 `AGENTS.md`：每个独立小闭环通过后停下等“继续”，主网部署与 live 永不合并授权。
+> 生产当前为 `observe`：只发现资格，不上传 metadata、不发 P14 交易。没有真实 eligible 时不得为验收制造主网用户。
 
 ### Phase 8 Scope（当前任务）
 

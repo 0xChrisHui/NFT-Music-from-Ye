@@ -1446,3 +1446,10 @@ Phase 6 kickoff 3 个产品决策冻结。后续不允许执行中自然飘移�
 - **发布决定**：主工作区同时有未提交 P14 工作，因此从最新 `origin/main` 建立隔离 worktree，只合并已审计的 P11 功能分支；过程视觉样板继续留在本地 `references/`，不重新带回仓库。
 - **上线结果**：提交 `2e55d65` 已推送 `main`，Vercel Production 成功；正式 `/artist`、`/me` 与 `/score/1` 均命中新 P11 内容，分享入口和永久凭证可见。
 - **健康结果**：受保护 health 验证 DB/钱包正常，pending jobs、manual review、mint failed 与 stuck 均为 0；外部 Arweave 动态补证继续保持未完成的真实状态。
+
+## 2026-09-11 — P14 以隔离发布分支进入主网 observe
+
+- **发布决定**：当前施工分支缺少已经上线的 P11 主线提交，因此从 P14 HEAD 创建 `codex/p14-mainnet-release`，无冲突合入 `origin/main` 并重新跑完整 Gate；只从这个候选版本发布，避免生产 UI 回退。
+- **资格决定**：cutoff 固定为已确认区块 `156738598`；链上仅有的两枚历史 Score 均通过正式注册 RPC 写为 `excluded_prelaunch`。没有 cutoff 后真实首铸时保持 observe，不为 smoke 伪造资格。
+- **调度决定**：observe 发现 P14 每分钟任务依赖的 `sync-chain-events` 原为每 5 分钟，期间会安全拒绝并出现 stale/lagging；将只读同步任务改为每分钟后继续观察，保持游标语义不变并缩短发现延迟。
+- **部署结果**：Pond Echoes 主网合约 `0xd2E884FA06C9a9BDef2350956cc4216d3E2B476c` 已验证源码；Production 为 observe，954 秒内 15 次 cron HTTP 200，2 excluded / 0 eligible / 0 failed / 0 mint。
