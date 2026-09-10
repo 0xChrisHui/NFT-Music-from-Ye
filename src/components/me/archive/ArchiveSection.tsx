@@ -8,6 +8,7 @@ type Props = {
   loading: boolean;
   refreshing?: boolean;
   error?: string | null;
+  warning?: string | null;
   onRetry?: () => void;
   emptyDescription: string;
   children: ReactNode;
@@ -21,6 +22,7 @@ export default function ArchiveSection({
   loading,
   refreshing = false,
   error = null,
+  warning = null,
   onRetry,
   emptyDescription,
   children,
@@ -36,9 +38,9 @@ export default function ArchiveSection({
           {count == null ? '—' : String(count).padStart(2, '0')}
         </span>
       </header>
-      {(refreshing || error) && (
+      {(refreshing || error || warning) && (
         <div className="archive-section__notice" role={error ? 'alert' : 'status'}>
-          <span>{error ?? '正在用最新档案刷新当前记录…'}</span>
+          <span>{error ?? warning ?? '正在用最新档案刷新当前记录…'}</span>
           {error && onRetry && <button type="button" onClick={onRetry}>重新读取</button>}
         </div>
       )}
