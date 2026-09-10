@@ -89,7 +89,8 @@ export default function MePage() {
             </ArchiveSection>
 
             <ArchiveSection
-              index={2} title="池中回声" count={echoes.phase === 'ready' ? echoes.items.length : null}
+              id="pond-echoes" index={2} title="池中回声"
+              count={echoes.phase === 'ready' ? echoes.items.length : null}
               loading={echoes.phase === 'idle' || echoes.phase === 'loading'}
               error={echoes.error} warning={echoes.warning} onRetry={() => { void echoes.retry(); }}
               emptyDescription="首枚符合启用条件的 Score 会生成一枚钱包专属的 36 段永久作品。"

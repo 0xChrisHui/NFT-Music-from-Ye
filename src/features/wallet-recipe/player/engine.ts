@@ -8,6 +8,7 @@ import {
 import {
   IDLE_WALLET_RECIPE_SNAPSHOT,
   toPlayerError,
+  type WalletRecipePlayerEngineOptions,
   type PlayerError,
   type WalletRecipePlayerController,
   type WalletRecipePlayerInput,
@@ -16,13 +17,6 @@ import {
 } from './types';
 
 const START_DELAY_SECONDS = 0.06;
-
-type EngineOptions = {
-  fetcher?: typeof fetch;
-  createAudioContext?: () => AudioContext;
-  requestFrame?: (callback: FrameRequestCallback) => number;
-  cancelFrame?: (handle: number) => void;
-};
 
 export class WalletRecipePlayerEngine implements WalletRecipePlayerController {
   private readonly fetcher: typeof fetch;
@@ -44,7 +38,7 @@ export class WalletRecipePlayerEngine implements WalletRecipePlayerController {
   private playheadMs = 0;
   private lastUiPositionMs = -Infinity;
 
-  constructor(options: EngineOptions = {}) {
+  constructor(options: WalletRecipePlayerEngineOptions = {}) {
     this.fetcher = options.fetcher ?? fetch;
     this.createContext = options.createAudioContext ?? (() => new AudioContext());
     this.requestFrame = options.requestFrame ?? ((callback) => window.requestAnimationFrame(callback));
@@ -104,6 +98,9 @@ export class WalletRecipePlayerEngine implements WalletRecipePlayerController {
     const generation = this.generation;
     this.update({ state: 'loading', errorKind: null, errorMessage: null });
     try {
+      // 先把“正在解码”状态交给浏览器绘制，再启动首轮批量 decode，守住 100ms 控制反馈。
+      await new Promise<void>((resolve) => globalThis.setTimeout(resolve, 0));
+      if (generation !== this.generation) return;
       const context = this.context ?? this.createContext();
       this.context = context;
       if (context.state !== 'running') await context.resume();

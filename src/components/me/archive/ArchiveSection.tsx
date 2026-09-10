@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import ArchiveEmpty from './ArchiveEmpty';
 
 type Props = {
+  id?: string;
   index: number;
   title: string;
   count: number | null;
@@ -16,6 +17,7 @@ type Props = {
 
 /** 档案分区独立呈现加载、刷新、错误和空态，不让单区故障遮住其他记录。 */
 export default function ArchiveSection({
+  id,
   index,
   title,
   count,
@@ -30,7 +32,7 @@ export default function ArchiveSection({
   const isEmpty = !loading && !error && count === 0;
 
   return (
-    <section className="archive-section" aria-labelledby={`archive-section-${index}`}>
+    <section id={id} className="archive-section" aria-labelledby={`archive-section-${index}`}>
       <header className="archive-section__header">
         <p>{String(index).padStart(2, '0')}</p>
         <h2 id={`archive-section-${index}`}>{title}</h2>

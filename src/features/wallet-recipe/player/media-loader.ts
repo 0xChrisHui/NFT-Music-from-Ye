@@ -2,7 +2,8 @@ import { fetchPermanentAudio } from './permanent-fetch';
 import type { WalletRecipeTimeline } from './timeline';
 import type { PlayerError, WalletRecipePlayerInput } from './types';
 
-const LOAD_CONCURRENCY = 4;
+// 典型 recipe 约 23 个唯一片段；12 路将网关往返压到约 2 批，压缩总量与解码内存不变。
+const LOAD_CONCURRENCY = 12;
 const DECODE_DURATION_TOLERANCE_MS = 3;
 
 export async function loadWalletRecipeAudio(

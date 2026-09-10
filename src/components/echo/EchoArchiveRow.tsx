@@ -13,7 +13,8 @@ export default function EchoArchiveRow({ echo, index }: { echo: EchoArchiveItem;
   const detail = echo.relation === 'current-owner'
     ? '链上 ownerOf 确认当前属于你'
     : echo.status === 'success' ? '由你的钱包诞生，目前由另一地址持有'
-      : '由你的首枚 Score 触发，尚未成为可转让作品';
+      : echo.status === 'excluded_prelaunch' ? '这枚 Score 早于启用边界，不参与自动生成'
+        : '由你的首枚 Score 触发，尚未成为可转让作品';
   return (
     <article className="me-archive-row" data-status={echo.status === 'owned' ? 'finalized' : echo.status}>
       <p className="me-archive-row__index">{String(index + 1).padStart(2, '0')} · ECHO</p>
