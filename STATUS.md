@@ -6,7 +6,7 @@
 
 ## 当前阶段
 
-**Phase**: **Phase 14 详细 Playbook 已完成，停在 P14-0 产品/合约决策 Gate**；Phase 11 代码与自动 Gate 已完成，外部动态补证与正式 Artist 文案继续保留；Phase 12 维持软启动观察。P8/P9 已正式完结，P12 已迁移 OP Mainnet。
+**Phase**: **Phase 14 详细 Playbook 已完成，停在 P14-0 产品/合约决策 Gate**；Phase 11 代码与自动 Gate 已完成，外部动态补证与正式 Artist 文案继续保留；P8/P9/P12 已正式完结，P12 已迁移 OP Mainnet。
 **Phase 拆分（2026-06-04 新定）**：
   - **Phase 7**（已完结 ✅）= 修严重 BUG + Semi + 提速
   - **Phase 8**（已完结 ✅）= 水塘视觉重设计（首页星空 → 水塘）
@@ -18,7 +18,7 @@
   - **Phase 14** = 钱包配方音乐 NFT 自动空投（首次 ScoreNFT mint 触发，终身一枚）
   - **Phase 15** = 全站丝滑体验与永久播放可靠性
   - **Phase 16** = 原生钱包 + 多链 / ETH Mainnet（往后排）
-**P9 系统性 Review 最终稿**：`reviews/2026-09-01-phase-9-final-review.md`（交叉复核 DeepSeek v4 Pro、Kimi K3 与当前代码。结论：0 P0、3 P1、8 P2、6 P3；33/33/33 映射、13/20 门控、月光写入 0、33 唯一音频和完整工程验证均通过。E“引力透镜轨道”与 R“花瓣原地炸裂”是用户拍板后的当前真值，DeepSeek 的 E=P0 为旧 playbook 导致的误报；Kimi 漏掉 6 个可见但无效参数、R 缓存增长与 reduced-motion 绕行。Track C 前建议先做 Review Fix Pack A+B。）
+**P9 最终完成 Review**：`reviews/2026-09-05-phase-9-completion-review.md`（阶段结论：33 键 / 33 唯一音效 / 33 生产动画，0 个 P9 遗留项，正式封存。2026-09-01 的系统性 review 与 Fix Pack 清单只保留为历史输入，最终生产证据见 `reviews/2026-09-01-phase-9-v4-2-final-gate.md`。）
 **P8 综合系统性 Review**：`reviews/2026-08-25-phase-8-consolidated-review.md`（汇总 Kimi K3 + Codex 并完成交叉验证；严格排除其他 Phase、媒体与 commit 收束。结论：0 个 P0、3 个 P1、7 个 P2。**3 个 P1、7 个 P2、死文件、文档契约、双树清单与自动浏览器回归均已完成**：专项代码与每步完整 `verify.sh` 全绿；Edge 实测四路由、fallback/context、wheel、拖拽取消、键盘、reduced-motion、横竖屏、DPR `2→1.5→2` 与 waterFx 连续切换全部通过。证据见 `reviews/2026-08-26-phase-8-browser-regression.md` 与 `reviews/2026-08-26-phase-8-dual-tree-inventory.md`。**2026-08-26 用户已确认 R3 与 L 线“活而不乱”最终目验通过，并明确让当前 `/test3` 替代首页；默认 `/` 已切为 GL 水塘，沙盒工具仅留 `/test3`/`/test4`，旧 SVG 由 `/v1` 保留。**原始 Kimi 报告保留在 `reviews/2026-08-25-phase-8-review.md`。）
 **P7 Completion Review**: `reviews/2026-05-16-phase-7-completion-review.md`（commit `5a2211a`，结论：Phase 7 完结，deferred 项挂 Phase 10）
 **P7 三方 review**：`reviews/2026-05-13-phase-7-playbook-review.md`（Claude 自审 + 2 个 Codex review，16 项必修已全部落地）
@@ -26,9 +26,13 @@
 **P6 Smoke Test**: `reviews/2026-05-08-phase-6-completion-smoke-test.md`（16/19 通过 + 0 P0 + 0 P1）
 **stakeholder 反馈**：艺术家 5 条反馈已收到（→ Phase 8）；投资人催 Semi demo（→ P7 Track B PoC-only）
 
-**P9 当前（2026-09-01）**：v4.2 Review Fix Pack A+B+C 已完成并部署 Production，生产注册表收束为 33 键/33 音效/33 动画；`/` 与 `/test3` 共用同一 P9 演奏层，首页不显示 P9 状态浮窗，调参面板仍只留在 `/test3`。静态审计、浏览器 33 键扫描、复音/回收/reduced-motion/60 FPS 压测、合并后完整 `scripts/verify.sh` 和 `pond-ripple.xyz` 线上冒烟全绿，证据见 `reviews/2026-09-01-phase-9-v4-2-final-gate.md`。**下一步：用户在生产首页进行最终体感体验；若无新增反馈，Phase 9 正式封存并进入下一阶段。**
+**P9 正式封存（2026-09-05）**：v4.2 Review Fix Pack A+B+C、Track C 清理、首页同步和 Production 发布全部完成；生产注册表为 33 键/33 唯一音效/33 动画。`/` 与 `/test3` 共用演奏层，首页不显示 P9 状态浮窗，调参面板只留在 `/test3`。2026-09-05 再次完成静态审计和 `pond-ripple.xyz` 线上真实键盘冒烟，P9 遗留项为 0；后续反馈按独立热修处理，不再占阶段 Next。
+
+**P12 完成（2026-09-01）**：7 天软启动窗口结束。本次只读终检确认 `/api/health` HTTP 200、DB/钱包正常、双队列无积压、manual review 为 0、`/score/1` HTTP 200，三份 OP Mainnet 合约均有字节码；最终记录见 `reviews/2026-08-23-phase-12-launch-review.md`。后续 health、cron、队列、余额与额度转为日常运维，不再占阶段待办。
 
 **P11 当前（2026-09-05）**：**代码与自动 Gate 已完成。** Track A、Track B B1–B5、Track C C0–C3、Track D D1–D3、Track E E0–E4 与 ARCHITECTURE v3/当前产品定位同步均已落地；C 的竞态、刷新反馈、坏封面与坏缓存已修，Artist stats API 已做到字段级局部容错且不再输出旧空投语义。Score 滚动热修已把生产 `/score/[id]` 的鼠标视差与滚轮景深解耦，纵向阅读页不再拦截滚轮；loading 同步补成可滚动的 Hero + 永久档案两屏结构。最终 `scripts/verify.sh` 全绿：TypeScript、ESLint、production build（34/34）与 Forge 42/42 全部通过；首页构建产物对 Score data/playback/ledger/session 的禁入模式仍为 0 命中。最终浏览器矩阵中 Artist 375/768/1024/1440 四视口与 `/me` 未登录边界通过，控制台 0 error。**未完成的只有用户本机滚动目验与外部动态证据**：Mainnet Token #1 的 ready Score cold-start reduced-motion 与日食黑盘复拍当前被 `arweave.net`、`ario.permagate.io` 两个网关同时失败阻塞；这不是代码 Gate 失败，资源恢复后必须补证，不能提前写通过。第二枚 Mainnet Token Gate 已 deferred，Sepolia #24 只作隔离 fixture。Artist 正式文案仍待用户以后替换，但不再阻塞代码完成。
+
+**P11 正式发布（2026-09-06）**：发布提交 `2e55d65` 已推送 `main`，Vercel Production 成功。正式域名 `/`、`/artist`、`/me`、`/score/1` 均 HTTP 200；Artist 草稿标识、私人音乐档案、Score 分享入口与永久凭证均命中新版 SSR 内容。受保护 `/api/health` 使用 Bearer 验证为 DB/钱包正常、两队列 0 积压/0 失败。双 Arweave 网关恢复后的 Token #1 动态补证与 Artist 正式文案仍是开放项，不阻塞发布。
 
 **P14 v2 Playbook（2026-09-05）**：核心方案与 `P14-0/A/B/C/E/D/F` 七条详细施工轨已冻结，文件位于 `playbook/phase-14/`。新 P14 = 钱包在启用后第一次成功铸造 ScoreNFT → 地址派生 36 位 `A-Z0-9` 确定性随机配方 → metadata 永久保存 recipe 与所用碎片 `ar://` 地址 → 独立 ERC-721 异步空投；每钱包终身一枚、允许转让、不补发历史钱包、只上 OP Mainnet。详细顺序因永久 metadata 依赖调整为 `P14-0 → A → B → C → E → D → F`：E0 必须先与用户共创视觉并冻结永久播放器，再允许 D 上传 metadata。**尚未开始业务代码；下一步只执行 P14-0 决策 Gate。**
 
@@ -83,7 +87,7 @@
 5. **D-1/T-1 ✅**：曲名 1-35 / 三钱包充值 / admin 备份与演练 / 349 行新快照 / 主网凭证 / 额度盘点 / 35 份 MaterialNFT 永久 metadata 全完成。
 6. **D2 主网上线 ✅ 完成（2026-08-23）**：冻结后快照 `C:\Users\Hui\ripples-backups\20260823-135447`（14 表 / 349 行 / 0 失败）；OP Mainnet 三合约部署、Etherscan 验证、权限收敛、Material URI 冻结完成；链衍生数据已清零并把游标设为 `155933187`；Vercel 三环境与 `main@71872d8` 已切主网；4 个 cron 已恢复，airdrop 保持关闭。真实 smoke：Material #24/#7/#34 全部 success，Score #1 mint + setTokenURI success，`/score/1` 页面、OG、metadata 与浏览器播放全部通过。
 7. **deployer 收口 ✅**：剩余 `0.000098861219548476 ETH` 已转回 operator（tx `0x1b7b...ef00`），只留约 `0.000000999038 ETH` 尘埃；13 项角色/冻结状态复核全绿；一次性 `deployer-wallet.json` 已销毁，admin 备份仍在。
-8. **当前唯一下一步：D4 软启动观察（Day 0/7）**。每天两次看 `/api/health`、cron-job.org、Supabase 双队列与告警邮箱；7 天无 P0 后完成 launch review，Phase 12 才正式完结。E 性能仍是软 gate，不阻塞。
+8. **D4 软启动观察 ✅ 完成（2026-09-01）**：观察窗超过 7 天且无 P0；终检 health、双队列、公开页与合约字节码通过。E 性能继续作为日常优化项，不阻塞阶段关闭。
 
 **当前权威下一步**：执行 P14-0，一次性拍板产品名、合约参数、资格启用边界、媒体数据形态、声音衔接与分级外部写入权限；未完成前不写 P14 业务代码、不上传 P14 永久资源。P14-E0 仍保留独立视觉共创 Gate，不能由默认建议替代。P11 本机滚动目验、Arweave 恢复后的 Token #1 动态补证和 Artist 正式文案继续作为开放项保留，但不阻塞 P14-0。
 
@@ -241,6 +245,18 @@
 - `app/api/` 硬线豁免缺失：hook 只认 `src/app/api/`，当前 app/api/ 接近 8 上限，新 route 考虑复用现有子目录（见 S5.c 放 `cron/queue-status/`）
 
 ## 上次成功验证
+
+- 验证: **P9 最终收尾、证据复验与阶段封存完成**
+- 时间: 2026-09-05
+- 改动: 建立 P9 唯一最终入口与 completion review；历史 playbook/review 标注为归档；刷新可复现静态审计、生产截图和真实键盘冒烟证据。
+- 验证证据: 33 键/33 唯一音效/33 动画、20 个独立效果/13 个日食效果、月光写入 0；生产 `/`、`/test3`、`/api/ping` 均为 HTTP 200，K 键成功触发 FX11，非日食状态 A 键按契约拒绝，首页无 P9 浮窗与调参面板。
+- 下一步: **P9 无下一步；项目继续以 P11 的 Decoder-first 架构同步授权为唯一 Now。**
+
+- 验证: **工作树堆积收口 + P12 最终关闭 + P11 playbook 迁移完成**
+- 时间: 2026-09-01
+- 改动: `references/` 改为纯本地素材库并从 Git 索引移除；Phase 13 未完成 PRD、P9 过程证据和本地工具记忆归档到忽略目录；补齐 P10 Track F 索引；P12 完成七天软启动终检；P11 盘点与 A–F playbook 迁入当前主线。
+- 验证证据: 生产 `/api/health` Bearer 请求 200、`/score/1` 200、三份主网合约字节码非空；`git diff --check` 与完整 `scripts/verify.sh` 通过。
+- 下一步: **取得 Decoder-first 架构同步授权后进入 P11-A；未授权前不修改 `docs/ARCHITECTURE.md`。**
 
 - 验证: **P14 七轨详细 Playbook 与连续施工 Gate 完成**
 - 时间: 2026-09-05

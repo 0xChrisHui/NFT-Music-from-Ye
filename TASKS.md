@@ -7,13 +7,19 @@
 
 ## 🎯 Now（最多 1 件，AI 正在做的）
 
-- **Phase 11 外部动态证据补档**（2026-09-02）：P11 代码与自动 Gate 已完成，最终 `scripts/verify.sh` 全绿（TypeScript、ESLint、production build 34/34、Forge 42/42）；Artist 四视口、`/me` 未登录边界与控制台 0 error 已通过。**当前唯一 Now：等待 `arweave.net` 与 `ario.permagate.io` 恢复后，补 Mainnet Token #1 ready Score 的 cold-start reduced-motion 与日食黑盘复拍。**网关同时失败期间不改已全绿代码、不把 fallback 冒充主演出通过。Artist 正式文案以后替换；第二枚 Mainnet Token Gate 已 deferred，Sepolia #24 仅作隔离历史 fixture。
+- **Phase 14 P14-0 产品/合约决策 Gate**：一次性拍板产品名、合约参数、资格启用边界、媒体数据形态、声音衔接与分级外部写入权限；完成前不写 P14 业务代码、不上传 P14 永久资源。P14-E0 仍保留独立视觉共创 Gate。
+
+## ⏳ Later / 开放项
+
+- **Phase 11 外部动态证据补档**（不阻塞）：代码与自动 Gate 已完成；等待 `arweave.net` 与 `ario.permagate.io` 恢复后，补 Mainnet Token #1 ready Score 的 cold-start reduced-motion 与日食黑盘复拍。Artist 正式文案以后替换；第二枚 Mainnet Token Gate 已 deferred，Sepolia #24 仅作隔离历史 fixture。
+
+## 📚 历史状态（非 Now）
 
 - **Phase 8 首页迁移 ✅**（2026-08-26）：R3 与 L 线“活而不乱”最终目验通过；当前 `/test3` 已替代默认首页，生产路由隐藏调参/诊断工具，`/v1` 保留旧 SVG 版本。完整 `verify.sh` 与三路由烟测全绿。
 
-- **Phase 12 并行软启动观察**：OP Mainnet 三合约、数据切换、Vercel 主网生产、4 个 cron、Material/Score 两条真实铸造与 `/score/1` 浏览器播放均已通过；一次性 deployer 已退权、转回余额并销毁私钥。继续按既定频率检查 health、cron、双队列与告警，不改变本轮唯一 Now。
+- **Phase 12 已完结 ✅**（2026-09-01）：OP Mainnet 上线、七天软启动与最终只读健康复核均完成；health、cron、双队列、余额和额度转为日常运维观察。
 
-- **近期完成**：P12 主网上线代码已在 `main@71872d8` 部署生产；Material #24/#7/#34 与 Score #1 主网 smoke 成功，公开页、OG、metadata、animation 播放通过。独立热修 commit `8ce2514` 已合入 `main`，失败的 ScoreNFT 记录不再误显“上链中”。
+- **近期完成**：工作树堆积已在 `codex/worktree-cleanup` 干净分支收束；`references/` 全部本地化，Phase 13 半成品 PRD 与 P9 过程证据归档；P10 Track F 索引补齐；P12 最终 Review 和 P11-0 文档落盘。
 
 - **（历史·2026-07-05 冻结）Phase 8-L**：Wave 0+1 已合并入 main（35 个新 flag 默认 false）。两条待办线由用户定先后：
   - ① **Wave 2 收口**：splashIntro + /test 集中验收 + S8/F9 默认值拍板 + 真机压测
@@ -262,6 +268,9 @@ findings 状态更新：`reviews/phase-6-findings-tracker.md`（7 项 deferred-j
 ---
 
 ## ✅ Done
+
+- **[Phase 11 正式发布]** ✅ 完成（2026-09-06）— 发布提交 `2e55d65` 已进入 `main` 并由 Vercel Production 成功部署；`/`、`/artist`、`/me`、`/score/1` 新 UI 与受保护健康检查均完成线上冒烟。外部动态补证与 Artist 正式文案保留为非阻塞开放项。
+- **[Phase 9 最终封存]** ✅ 完成（2026-09-05）— 33 键 / 33 唯一音效 / 33 生产动画已通过最终静态审计、浏览器压力 Gate、首页同步、Production 发布与线上复验；P9 遗留项为 0，后续体感反馈转独立热修或新阶段。
 
 - **[Phase 11 代码与自动 Gate]** ✅ 完成（2026-09-02）— A–E 代码、C2/C3 档案七态与局部失败、Artist 草稿页及字段级 stats 容错、ARCH 当前空投语义清理、第二 Token deferred 决策均闭合；C 的竞态/刷新/坏封面/坏缓存已修。最终 verify：production build 34/34、Forge 42/42；Artist 375/768/1024/1440 与 `/me` 未登录矩阵通过，console 0。仅外部 Arweave 恢复后的 ready Score 两项动态证据留在 Blocked。
 - **[Phase 7 Track A A2]** ✅ 完成（2026-05-15）— AirdropNFT v2 加 `_uriSet` 防 MINTER 私钥泄露后改 metadata：
